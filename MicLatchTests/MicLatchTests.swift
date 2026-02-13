@@ -2,7 +2,7 @@
 //  MicLatchTests.swift
 //  MicLatch
 //
-//  Created by Developer on 2/13/26.
+//  Copyright © 2026 Mingxuan Wang. All rights reserved.
 //
 
 @testable import MicLatchKit

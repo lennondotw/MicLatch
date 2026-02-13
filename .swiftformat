@@ -70,7 +70,7 @@
 --maxwidth 120
 
 # Header
---header "//\n//  {file}\n//  MicLatch\n//\n//  Created by Developer on {created}.\n//"
+--header "//\n//  {file}\n//  MicLatch\n//\n//  Copyright © 2026 Mingxuan Wang. All rights reserved.\n//"
 
 # Redundant options
 --redundanttype infer-locals-only
