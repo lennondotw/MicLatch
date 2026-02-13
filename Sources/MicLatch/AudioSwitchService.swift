@@ -181,13 +181,12 @@ final class AudioSwitchService: ObservableObject {
         pendingTimer?.invalidate()
         pendingTimer = Timer.scheduledTimer(
             withTimeInterval: windowDuration,
-            repeats: false,
-            block: { [weak self] _ in
-                Task { @MainActor in
-                    self?.handleWindowExpired()
-                }
+            repeats: false
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.handleWindowExpired()
             }
-        )
+        }
     }
 
     private func handleInputChanged() {

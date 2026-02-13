@@ -252,7 +252,11 @@ enum AudioDevice {
         return deviceID
     }
 
-    private static func setDefaultDevice(selector: AudioObjectPropertySelector, to deviceID: AudioDeviceID) -> Bool {
+    private static func setDefaultDevice(
+        selector: AudioObjectPropertySelector, to deviceID: AudioDeviceID
+    )
+        -> Bool
+    {
         var address = AudioObjectPropertyAddress(
             mSelector: selector,
             mScope: kAudioObjectPropertyScopeGlobal,
