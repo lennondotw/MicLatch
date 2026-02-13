@@ -95,11 +95,11 @@ lint:
 
 # Check formatting without changes
 format-check:
-    swiftformat Sources Tests --lint --config .swiftformat
+    swiftformat MicLatch MicLatchTests --lint --config .swiftformat
 
 # Apply SwiftFormat
 format:
-    swiftformat Sources Tests --config .swiftformat
+    swiftformat MicLatch MicLatchTests --config .swiftformat
 
 # Run all checks (lint + format)
 check: lint format-check
@@ -107,7 +107,7 @@ check: lint format-check
 # Auto-fix all fixable issues
 fix:
     swiftlint --fix --config .swiftlint.yml
-    swiftformat Sources Tests --config .swiftformat
+    swiftformat MicLatch MicLatchTests --config .swiftformat
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Cleanup

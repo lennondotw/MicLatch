@@ -3,8 +3,8 @@
 
 # Paths to include during linting
 included:
-  - Sources
-  - Tests
+  - MicLatch
+  - MicLatchTests
 
 # Paths to exclude during linting
 excluded:

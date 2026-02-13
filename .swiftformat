@@ -8,7 +8,7 @@
 --exclude .build,DerivedData,Pods,Carthage,**/.build
 
 # Format options
---indent 4
+--indent 2
 --tabwidth 4
 --maxwidth 120
 --wraparguments before-first

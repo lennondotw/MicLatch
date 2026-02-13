@@ -1,5 +1,4 @@
-# XcodeGen Project Specification
-# https://github.com/yonaskolb/XcodeGen/blob/master/Docs/ProjectSpec.md
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yonaskolb/XcodeGen/master/Assets/json-schema/project.json
 
 name: MicLatch
 
@@ -15,8 +14,8 @@ options:
   generateEmptyDirectories: true
   groupSortPosition: top
   createIntermediateGroups: true
-  indentWidth: 4
-  tabWidth: 4
+  indentWidth: 2
+  tabWidth: 2
   usesTabs: false
   postGenCommand: |
     for dir in \
@@ -37,9 +36,7 @@ settings:
   base:
     SWIFT_VERSION: "6.0"
     ENABLE_USER_SCRIPT_SANDBOXING: false
-    # Swift 6 strict concurrency
     SWIFT_STRICT_CONCURRENCY: complete
-    # Enable upcoming Swift features
     SWIFT_UPCOMING_FEATURE_EXISTENTIAL_ANY: true
     SWIFT_UPCOMING_FEATURE_INTERNAL_IMPORTS_BY_DEFAULT: true
   configs:
@@ -74,24 +71,27 @@ targets:
     type: application
     platform: macOS
     sources:
-      - path: Sources/MicLatch
-        excludes:
-          - "**/.DS_Store"
+      - path: MicLatch/Sources
+      - path: MicLatch/Resources
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: sh.lennon.MicLatch
         MARKETING_VERSION: "1.0.0"
         CURRENT_PROJECT_VERSION: "1"
-        INFOPLIST_FILE: Sources/MicLatch/Info.plist
-        CODE_SIGN_ENTITLEMENTS: Sources/MicLatch/MicLatch.entitlements
+        INFOPLIST_FILE: MicLatch/Resources/Info.plist
+        CODE_SIGN_ENTITLEMENTS: MicLatch/Resources/MicLatch.entitlements
         GENERATE_INFOPLIST_FILE: false
         MACOSX_DEPLOYMENT_TARGET: "15.0"
         ENABLE_HARDENED_RUNTIME: true
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: ""
+        PRODUCT_MODULE_NAME: MicLatch
       configs:
         Debug:
           PRODUCT_BUNDLE_IDENTIFIER: sh.lennon.MicLatch.debug
+          PRODUCT_NAME: "MicLatch Debug"
+        Release:
+          PRODUCT_BUNDLE_IDENTIFIER: sh.lennon.MicLatch
+          PRODUCT_NAME: MicLatch
     preBuildScripts:
       - name: "SwiftLint"
         basedOnDependencyAnalysis: false
@@ -107,7 +107,7 @@ targets:
         shell: /bin/zsh
         script: |
           if command -v swiftformat >/dev/null 2>&1; then
-            swiftformat "${SRCROOT}/Sources" --lint --config "${SRCROOT}/.swiftformat" --quiet
+            swiftformat "${SRCROOT}/MicLatch" --lint --config "${SRCROOT}/.swiftformat" --quiet
           else
             echo "warning: SwiftFormat not installed, run 'brew install swiftformat'"
           fi
@@ -120,17 +120,19 @@ targets:
     type: bundle.unit-test
     platform: macOS
     sources:
-      - path: Tests/MicLatchTests
-        excludes:
-          - "**/.DS_Store"
+      - path: MicLatchTests
     dependencies:
       - target: MicLatch
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: sh.lennon.MicLatchTests
+        PRODUCT_BUNDLE_IDENTIFIER: sh.lennon.MicLatch.tests
         GENERATE_INFOPLIST_FILE: true
-        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/MicLatch.app/Contents/MacOS/MicLatch"
-        BUNDLE_LOADER: "$(TEST_HOST)"
+        BUNDLE_LOADER: $(TEST_HOST)
+      configs:
+        Debug:
+          TEST_HOST: "$(BUILT_PRODUCTS_DIR)/MicLatch Debug.app/Contents/MacOS/MicLatch Debug"
+        Release:
+          TEST_HOST: "$(BUILT_PRODUCTS_DIR)/MicLatch.app/Contents/MacOS/MicLatch"
 
 ############################################################
 # Schemes
@@ -144,8 +146,7 @@ schemes:
         MicLatchTests: [test]
     run:
       config: Debug
-      commandLineArguments:
-        "-com.apple.CoreData.SQLDebug": false
+      executable: MicLatch
     test:
       config: Debug
       gatherCoverageData: true
