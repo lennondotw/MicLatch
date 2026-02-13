@@ -15,28 +15,36 @@ struct AudioSwitchServiceTests {
   @MainActor
   @Test("Service initializes with correct window duration")
   func initializesWithWindowDuration() {
-    let service = AudioSwitchService(windowDuration: 0.5)
+    let service = AudioSwitchService(windowDuration: 0.5, startImmediately: false)
     #expect(service.windowDuration == 0.5)
   }
 
   @MainActor
   @Test("Service initializes with custom window duration")
   func initializesWithCustomWindowDuration() {
-    let service = AudioSwitchService(windowDuration: 1.0)
+    let service = AudioSwitchService(windowDuration: 1.0, startImmediately: false)
     #expect(service.windowDuration == 1.0)
   }
 
   @MainActor
-  @Test("Service starts not monitoring")
-  func startsNotMonitoring() {
+  @Test("Service starts monitoring by default")
+  func startsMonitoringByDefault() {
     let service = AudioSwitchService()
+    #expect(service.isMonitoring == true)
+    service.stop()
+  }
+
+  @MainActor
+  @Test("Service can be initialized without starting")
+  func canInitializeWithoutStarting() {
+    let service = AudioSwitchService(startImmediately: false)
     #expect(service.isMonitoring == false)
   }
 
   @MainActor
   @Test("Service can start monitoring")
   func canStartMonitoring() {
-    let service = AudioSwitchService()
+    let service = AudioSwitchService(startImmediately: false)
     service.start()
     #expect(service.isMonitoring == true)
     service.stop()
@@ -45,7 +53,7 @@ struct AudioSwitchServiceTests {
   @MainActor
   @Test("Service can stop monitoring")
   func canStopMonitoring() {
-    let service = AudioSwitchService()
+    let service = AudioSwitchService(startImmediately: false)
     service.start()
     service.stop()
     #expect(service.isMonitoring == false)
@@ -54,7 +62,7 @@ struct AudioSwitchServiceTests {
   @MainActor
   @Test("Starting twice does not crash")
   func startingTwiceDoesNotCrash() {
-    let service = AudioSwitchService()
+    let service = AudioSwitchService(startImmediately: false)
     service.start()
     service.start() // Should be no-op
     #expect(service.isMonitoring == true)
@@ -64,7 +72,7 @@ struct AudioSwitchServiceTests {
   @MainActor
   @Test("Stopping without starting does not crash")
   func stoppingWithoutStartingDoesNotCrash() {
-    let service = AudioSwitchService()
+    let service = AudioSwitchService(startImmediately: false)
     service.stop() // Should be no-op
     #expect(service.isMonitoring == false)
   }
@@ -72,7 +80,7 @@ struct AudioSwitchServiceTests {
   @MainActor
   @Test("Service records initial device names on start")
   func recordsInitialDeviceNames() {
-    let service = AudioSwitchService()
+    let service = AudioSwitchService(startImmediately: false)
     service.start()
 
     // On most systems, there should be at least one input and output device
@@ -86,7 +94,7 @@ struct AudioSwitchServiceTests {
   @MainActor
   @Test("Service cleans up on stop")
   func cleansUpOnStop() {
-    let service = AudioSwitchService()
+    let service = AudioSwitchService(startImmediately: false)
     service.start()
     service.stop()
 

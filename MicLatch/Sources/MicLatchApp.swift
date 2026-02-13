@@ -12,8 +12,7 @@ import SwiftUI
 
 @main
 struct MicLatchApp: App {
-  @StateObject private var service = AudioSwitchService()
-  private let updaterController: SPUStandardUpdaterController
+  // MARK: Lifecycle
 
   init() {
     self.updaterController = SPUStandardUpdaterController(
@@ -23,11 +22,21 @@ struct MicLatchApp: App {
     )
   }
 
+  // MARK: Internal
+
   var body: some Scene {
     MenuBarExtra {
       MenuBarView(service: service, updater: updaterController.updater)
     } label: {
-      Label("MicLatch", systemImage: service.isMonitoring ? "mic.fill" : "mic.slash")
+      Image(systemName: service.isMonitoring ? "microphone.badge.plus.fill" : "microphone.slash.fill")
+        .symbolRenderingMode(.hierarchical)
+        .foregroundStyle(service.isMonitoring ? .primary : .secondary)
     }
   }
+
+  // MARK: Private
+
+  @StateObject private var service = AudioSwitchService()
+
+  private let updaterController: SPUStandardUpdaterController
 }

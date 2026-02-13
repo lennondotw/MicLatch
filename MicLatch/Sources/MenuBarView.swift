@@ -22,17 +22,14 @@ struct MenuBarView: View {
 
     Divider()
 
-    // Protection toggle
-    Toggle("Enable Protection", isOn: Binding(
-      get: { service.isMonitoring },
-      set: { newValue in
-        if newValue {
-          service.start()
-        } else {
-          service.stop()
-        }
+    // Suspend/Resume toggle
+    Button(service.isMonitoring ? "Suspend Protection" : "Resume Protection") {
+      if service.isMonitoring {
+        service.stop()
+      } else {
+        service.start()
       }
-    ))
+    }
 
     Divider()
 
@@ -59,5 +56,8 @@ struct MenuBarView: View {
     updaterDelegate: nil,
     userDriverDelegate: nil
   )
-  return MenuBarView(service: AudioSwitchService(), updater: controller.updater)
+  return MenuBarView(
+    service: AudioSwitchService(startImmediately: false),
+    updater: controller.updater
+  )
 }

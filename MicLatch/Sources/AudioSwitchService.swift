@@ -28,8 +28,11 @@ final class AudioSwitchService: ObservableObject {
 
   // MARK: - Initialization
 
-  init(windowDuration: TimeInterval = 0.5) {
+  init(windowDuration: TimeInterval = 0.5, startImmediately: Bool = true) {
     self.windowDuration = windowDuration
+    if startImmediately {
+      start()
+    }
   }
 
   // MARK: Internal
