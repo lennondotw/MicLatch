@@ -175,9 +175,6 @@ enum AudioDevice {
       mElement: kAudioObjectPropertyElementMain
     )
 
-    // Box the handler to pass through the listener block
-    let handlerBox = Unmanaged.passRetained(handler as AnyObject)
-
     let listenerBlock: AudioObjectPropertyListenerBlock = { _, _ in
       handler()
     }
@@ -185,16 +182,13 @@ enum AudioDevice {
     let status = AudioObjectAddPropertyListenerBlock(systemObjectID, &address, nil, listenerBlock)
 
     guard status == noErr else {
-      handlerBox.release()
       Log.serviceError("Failed to add property listener for \(selector)", code: status)
       return nil
     }
 
-    // Return cleanup closure
     return { [listenerBlock] in
       var addr = address
       AudioObjectRemovePropertyListenerBlock(Self.systemObjectID, &addr, nil, listenerBlock)
-      handlerBox.release()
     }
   }
 
