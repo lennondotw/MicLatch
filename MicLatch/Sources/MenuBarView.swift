@@ -25,9 +25,12 @@ struct MenuBarView: View {
     Divider()
 
     // Statistics
-    Text("Linked Input Change Restores: \(service.inputRestoreCount)")
-    Text("Non-Linked Input Switches: \(service.nonLinkedInputSwitchCount)")
-    Text("Last Input Change: \(formatLastInputChange(service.lastInputChange, at: service.currentTime))")
+    // - Linked Restores: Input device auto-restored after Bluetooth output switch within time window
+    // - Unlinked Switches: Input changes outside time window or from non-Bluetooth devices
+    // - Last Change: Most recent input change event with status (Restored/Failed/Non-Linked)
+    Text("Linked Restores: \(service.inputRestoreCount)")
+    Text("Unlinked Switches: \(service.nonLinkedInputSwitchCount)")
+    Text("Last Change: \(formatLastInputChange(service.lastInputChange, at: service.currentTime))")
 
     Divider()
 
