@@ -3,6 +3,14 @@
     <channel>
         <title>MicLatch</title>
         <item>
+            <title>0.4.7</title>
+            <pubDate>Fri, 13 Feb 2026 13:58:30 +0000</pubDate>
+            <sparkle:version>11</sparkle:version>
+            <sparkle:shortVersionString>0.4.7</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/lennondotw/MicLatch/releases/download/v0.4.7/MicLatch-0.4.7.zip" length="1186076" type="application/octet-stream" sparkle:edSignature="trpkbWNZhpwAWDDiwunBST6105S16K6MuBz5tK0KZbtU+sn1mhsialn5Sdo2ds0cXWjTTK593GxONscjmzd6Dw=="/>
+        </item>
+        <item>
             <title>0.4.6</title>
             <pubDate>Fri, 13 Feb 2026 13:54:59 +0000</pubDate>
             <sparkle:version>10</sparkle:version>
@@ -17,14 +25,6 @@
             <sparkle:shortVersionString>0.4.5</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
             <enclosure url="https://github.com/lennondotw/MicLatch/releases/download/v0.4.5/MicLatch-0.4.5.zip" length="1186161" type="application/octet-stream" sparkle:edSignature="rKdXhegDKa5+psF1xYxw7vNufBQc80E1vSz2k1x/C4plnUcJ6ZawUT3VzdjYQM7bmQQscLW0mDxGHLVOmx/NCA=="/>
-        </item>
-        <item>
-            <title>0.4.4</title>
-            <pubDate>Fri, 13 Feb 2026 13:33:32 +0000</pubDate>
-            <sparkle:version>8</sparkle:version>
-            <sparkle:shortVersionString>0.4.4</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
-            <enclosure url="https://github.com/lennondotw/MicLatch/releases/download/v0.4.4/MicLatch-0.4.4.zip" length="1175770" type="application/octet-stream" sparkle:edSignature="NwGK/v8RLO/4NU5lbsuGpRIXOAQ64PKIpPO4X6JG1sbu1x10BBtjRaWFXdn/bEbsziJo0M0cFNRW3ZTSZ59ZDw=="/>
         </item>
     </channel>
 </rss>
