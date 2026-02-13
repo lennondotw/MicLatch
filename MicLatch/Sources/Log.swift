@@ -43,7 +43,7 @@ enum Log {
     let toStr = newDevice ?? "(none)"
     let transportStr = transport.map { " [\($0)]" } ?? ""
     events
-      .info(
+      .notice(
         "📤 OUTPUT | \"\(fromStr, privacy: .public)\" → \"\(toStr, privacy: .public)\"\(transportStr, privacy: .public)"
       )
   }
@@ -60,7 +60,7 @@ enum Log {
     let transportStr = transport.map { " [\($0)]" } ?? ""
     let linkTag = isLinked ? " (linked)" : ""
     events
-      .info(
+      .notice(
         "📥 INPUT  | \"\(fromStr, privacy: .public)\" → \"\(toStr, privacy: .public)\"\(transportStr, privacy: .public)\(linkTag, privacy: .public)"
       )
   }
@@ -68,7 +68,7 @@ enum Log {
   /// Log window state change.
   static func windowStateChanged(isOpen: Bool, reason: String) {
     events
-      .info("🪟 WINDOW | \(isOpen ? "opened" : "closed", privacy: .public) | reason: \(reason, privacy: .public)")
+      .notice("🪟 WINDOW | \(isOpen ? "opened" : "closed", privacy: .public) | reason: \(reason, privacy: .public)")
   }
 
   // MARK: - Decision Logging
@@ -112,12 +112,12 @@ enum Log {
 
   /// Log service lifecycle events.
   static func serviceStarted() {
-    events.info("🚀 SERVICE | Started monitoring")
+    events.notice("🚀 SERVICE | Started monitoring")
   }
 
   /// Log service stopped.
   static func serviceStopped() {
-    events.info("🛑 SERVICE | Stopped monitoring")
+    events.notice("🛑 SERVICE | Stopped monitoring")
   }
 
   /// Log service error.
