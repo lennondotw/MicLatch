@@ -127,16 +127,13 @@ final class NotificationService {
   func notifyDefaultInputChanged(
     from oldDevice: String?,
     to newDevice: String,
-    context: InputChangeContext = .standalone
+    context: InputChangeContext
   ) {
     guard settings.defaultInputChanged else {
       return
     }
     let title =
       switch context {
-      case .standalone:
-        "Default Input Changed"
-
       case .linked:
         "Input Changed (Linked)"
 

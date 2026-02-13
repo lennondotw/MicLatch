@@ -11,9 +11,6 @@ import Foundation
 
 /// Context for input device changes.
 enum InputChangeContext: Equatable {
-  /// Standalone input change (no output switch context).
-  case standalone
-
   /// Input changed within the linked time window (Bluetooth HFP).
   case linked
 
@@ -67,9 +64,6 @@ struct AudioEvent: Identifiable, Equatable {
     case let .inputChanged(from, to, context):
       let label =
         switch context {
-        case .standalone:
-          "Input"
-
         case .linked:
           "Input (Linked)"
 
