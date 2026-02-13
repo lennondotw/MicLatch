@@ -45,13 +45,11 @@ setup-lsp: generate
 
 # Build Debug configuration
 build: generate
-    xcodebuild -scheme {{ scheme }} -configuration Debug -derivedDataPath {{ derived_data }} \
-        CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO build | xcbeautify
+    xcodebuild -scheme {{ scheme }} -configuration Debug -derivedDataPath {{ derived_data }} build | xcbeautify
 
 # Build Release configuration
 build-release: generate
-    xcodebuild -scheme {{ scheme }} -configuration Release -derivedDataPath {{ derived_data }} \
-        CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO build | xcbeautify
+    xcodebuild -scheme {{ scheme }} -configuration Release -derivedDataPath {{ derived_data }} build | xcbeautify
 
 # Kill running app (if any)
 kill:
@@ -83,12 +81,12 @@ logs:
 # Build for testing only
 test-build: generate
     xcodebuild -scheme {{ scheme }} -configuration Debug -derivedDataPath {{ derived_data }} \
-        CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO build-for-testing | xcbeautify
+        build-for-testing | xcbeautify
 
 # Run tests without rebuilding (requires prior `just test-build`)
 test-run:
     xcodebuild -scheme {{ scheme }} -configuration Debug -derivedDataPath {{ derived_data }} \
-        CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO test-without-building | xcbeautify
+        test-without-building | xcbeautify
 
 # Build and run unit tests
 test: test-build test-run
