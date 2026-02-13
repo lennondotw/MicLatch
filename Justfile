@@ -6,8 +6,11 @@ set shell := ["bash", "-eo", "pipefail", "-c"]
 project_name := "MicLatch"
 scheme := "MicLatch"
 derived_data := ".build/DerivedData"
-app_path := derived_data / "Build/Products/Debug" / project_name + ".app"
-app_path_release := derived_data / "Build/Products/Release" / project_name + ".app"
+# Debug app has "MicLatch Debug" as PRODUCT_NAME
+app_name_debug := "MicLatch Debug"
+app_name_release := "MicLatch"
+app_path := derived_data / "Build/Products/Debug" / app_name_debug + ".app"
+app_path_release := derived_data / "Build/Products/Release" / app_name_release + ".app"
 
 # Auto-derived from project.yml
 app_version := `grep 'MARKETING_VERSION:' project.yml | sed "s/.*['\"]\\([^'\"]*\\)['\"].*/\\1/"`
@@ -48,7 +51,8 @@ build-release: generate
 
 # Kill running app (if any)
 kill:
-    @-pkill -x "{{ project_name }}" 2>/dev/null || true
+    @-pkill -x "{{ app_name_debug }}" 2>/dev/null || true
+    @-pkill -x "{{ app_name_release }}" 2>/dev/null || true
 
 # Run already-built Debug app (requires prior `just build`)
 run-built:
@@ -59,7 +63,7 @@ run: kill build run-built
 
 # Run already-built Debug app in foreground (stdout/stderr in terminal)
 run-built-fg:
-    disclaim "{{ app_path }}/Contents/MacOS/{{ project_name }}"
+    disclaim "{{ app_path }}/Contents/MacOS/{{ app_name_debug }}"
 
 # Build and run Debug in foreground (stdout/stderr in terminal)
 run-fg: kill build run-built-fg
