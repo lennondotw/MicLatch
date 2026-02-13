@@ -52,8 +52,8 @@ struct MenuBarView: View {
     Divider()
 
     // Statistics
-    Text("Linked Input Change: \(service.inputRestoreCount)")
-    Text("Unlinked Input Change: \(service.nonLinkedInputSwitchCount)")
+    Text("Linked Input Change (Restored): \(service.inputRestoreCount)")
+    Text("Unlinked Input Change (Ignored): \(service.nonLinkedInputSwitchCount)")
 
     // Event History submenu
     Menu("Event History") {
