@@ -1,0 +1,10 @@
+// Local development configuration
+// Copy this file to Local.xcconfig and customize for your environment
+//
+// This file is gitignored - your settings won't be committed
+
+// Your Apple Developer Team ID (find at https://developer.apple.com/account)
+// DEVELOPMENT_TEAM = YOUR_TEAM_ID
+
+// Uncomment to enable automatic signing
+// CODE_SIGN_STYLE = Automatic

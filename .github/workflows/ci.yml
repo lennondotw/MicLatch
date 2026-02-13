@@ -45,9 +45,6 @@ jobs:
       - name: Install dependencies
         run: brew install xcodegen xcbeautify
 
-      - name: Create Local.xcconfig for CI
-        run: cp CI.xcconfig Local.xcconfig
-
       - name: Generate Xcode project
         run: xcodegen generate
 
@@ -66,6 +63,7 @@ jobs:
             -destination 'platform=macOS' \
             -clonedSourcePackagesDirPath SourcePackages \
             -disableAutomaticPackageResolution \
+            CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO \
             build 2>&1 | xcbeautify
 
       - name: Test
@@ -76,6 +74,7 @@ jobs:
             -destination 'platform=macOS' \
             -clonedSourcePackagesDirPath SourcePackages \
             -disableAutomaticPackageResolution \
+            CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO \
             test 2>&1 | xcbeautify
 
   release-build:
@@ -94,9 +93,6 @@ jobs:
 
       - name: Install dependencies
         run: brew install xcodegen xcbeautify
-
-      - name: Create Local.xcconfig for CI
-        run: cp CI.xcconfig Local.xcconfig
 
       - name: Generate Xcode project
         run: xcodegen generate
@@ -117,16 +113,18 @@ jobs:
             -derivedDataPath build \
             -clonedSourcePackagesDirPath SourcePackages \
             -disableAutomaticPackageResolution \
+            CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO \
             build 2>&1 | xcbeautify
 
-      - name: Create zip for artifact
+      - name: Create zip
         run: |
           cd build/Build/Products/Release
-          zip -r -y MicLatch.zip MicLatch.app
+          ditto -c -k --sequesterRsrc --keepParent MicLatch.app MicLatch.zip
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: MicLatch-${{ github.sha }}
           path: build/Build/Products/Release/MicLatch.zip
+          compression-level: 0
           retention-days: 30

@@ -81,9 +81,6 @@ targets:
     sources:
       - path: MicLatch/Sources
       - path: MicLatch/Resources
-    configFiles:
-      Debug: Local.xcconfig
-      Release: Local.xcconfig
     dependencies:
       - package: Sparkle
     settings:
