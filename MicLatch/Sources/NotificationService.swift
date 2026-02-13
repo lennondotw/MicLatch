@@ -128,11 +128,13 @@ final class NotificationService {
     guard settings.defaultInputChanged else {
       return
     }
-    let fromStr = oldDevice ?? "None"
-    send(
-      title: "Default Input Changed",
-      body: "Changed from \"\(fromStr)\" to \"\(newDevice)\""
-    )
+    let body =
+      if let oldDevice {
+        "\"\(newDevice)\" (was \"\(oldDevice)\")"
+      } else {
+        "\"\(newDevice)\""
+      }
+    send(title: "Default Input Changed", body: body)
   }
 
   /// Notify that the default output device changed.
@@ -140,11 +142,13 @@ final class NotificationService {
     guard settings.defaultOutputChanged else {
       return
     }
-    let fromStr = oldDevice ?? "None"
-    send(
-      title: "Default Output Changed",
-      body: "Changed from \"\(fromStr)\" to \"\(newDevice)\""
-    )
+    let body =
+      if let oldDevice {
+        "\"\(newDevice)\" (was \"\(oldDevice)\")"
+      } else {
+        "\"\(newDevice)\""
+      }
+    send(title: "Default Output Changed", body: body)
   }
 
   /// Notify that an input device was removed/disconnected.

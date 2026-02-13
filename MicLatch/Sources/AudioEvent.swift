@@ -43,13 +43,13 @@ struct AudioEvent: Identifiable, Equatable {
     switch type {
     case let .outputChanged(from, to):
       if let from {
-        return "Output: \(from) → \(to)"
+        return "Output: \(to) (was \(from))"
       }
       return "Output: \(to)"
 
     case let .inputChanged(from, to):
       if let from {
-        return "Input: \(from) → \(to)"
+        return "Input: \(to) (was \(from))"
       }
       return "Input: \(to)"
 
@@ -60,10 +60,10 @@ struct AudioEvent: Identifiable, Equatable {
       return "Restore Failed: \(deviceName)"
 
     case let .linkedInputChange(from, to):
-      return "Linked: \(from) → \(to)"
+      return "Linked: \(to) (was \(from))"
 
     case let .unlinkedInputChange(from, to):
-      return "Unlinked: \(from) → \(to)"
+      return "Unlinked: \(to) (was \(from))"
 
     case let .inputDeviceConnected(deviceName):
       return "Input Connected: \(deviceName)"
