@@ -95,6 +95,11 @@ struct MicLatchApp: App {
       updaterDelegate: nil,
       userDriverDelegate: nil
     )
+
+    // Request notification permission
+    Task { @MainActor in
+      await NotificationService.shared.requestAuthorization()
+    }
   }
 
   // MARK: Internal

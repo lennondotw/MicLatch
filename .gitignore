@@ -83,3 +83,6 @@ logs/
 
 # xcode-build-server
 buildServer.json
+
+# Git worktrees
+.worktrees/

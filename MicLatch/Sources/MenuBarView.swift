@@ -14,10 +14,36 @@ struct MenuBarView: View {
   // MARK: Internal
 
   @ObservedObject var service: AudioSwitchService
+  @ObservedObject var notificationSettings = NotificationService.shared.settings
 
   let updater: SPUUpdater
 
   var body: some View {
+    // Suspend/Resume toggle (most important action)
+    Button(service.isMonitoring ? "Suspend Protection" : "Resume Protection") {
+      if service.isMonitoring {
+        service.stop()
+      } else {
+        service.start()
+      }
+    }
+
+    // Notifications submenu
+    Menu("Notifications") {
+      Toggle("Input Restored", isOn: $notificationSettings.inputRestored)
+      Toggle("Default Input Changed", isOn: $notificationSettings.defaultInputChanged)
+      Toggle("Default Output Changed", isOn: $notificationSettings.defaultOutputChanged)
+
+      Divider()
+
+      Toggle("Input Device Connected", isOn: $notificationSettings.inputDeviceConnected)
+      Toggle("Input Device Removed", isOn: $notificationSettings.inputDeviceRemoved)
+      Toggle("Output Device Connected", isOn: $notificationSettings.outputDeviceConnected)
+      Toggle("Output Device Removed", isOn: $notificationSettings.outputDeviceRemoved)
+    }
+
+    Divider()
+
     // Device status (read-only info)
     Text("Output: \(service.currentOutputName ?? "Unknown")")
     Text("Input: \(service.currentInputName ?? "Unknown")")
@@ -31,17 +57,6 @@ struct MenuBarView: View {
     Text("Linked Restores: \(service.inputRestoreCount)")
     Text("Unlinked Switches: \(service.nonLinkedInputSwitchCount)")
     Text("Last Change: \(formatLastInputChange(service.lastInputChange))")
-
-    Divider()
-
-    // Suspend/Resume toggle
-    Button(service.isMonitoring ? "Suspend Protection" : "Resume Protection") {
-      if service.isMonitoring {
-        service.stop()
-      } else {
-        service.start()
-      }
-    }
 
     Divider()
 
@@ -82,7 +97,7 @@ struct MenuBarView: View {
       return "Failed → \(deviceName) (at \(Self.timeFormatter.string(from: timestamp)))"
 
     case let .nonLinked(_, to, timestamp):
-      return "Non-Linked → \(to) (at \(Self.timeFormatter.string(from: timestamp)))"
+      return "Unlinked → \(to) (at \(Self.timeFormatter.string(from: timestamp)))"
     }
   }
 }

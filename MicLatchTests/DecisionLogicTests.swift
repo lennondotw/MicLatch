@@ -14,6 +14,8 @@ import Testing
 /// Mock provider for testing decision logic without real audio hardware.
 /// Uses `nonisolated(unsafe)` for test-only mutable state since tests run sequentially.
 final class MockAudioDeviceProvider: AudioDeviceProviding, @unchecked Sendable {
+  // MARK: Internal
+
   // MARK: - Mock Device IDs
 
   static let builtInMic: AudioDeviceID = 100
@@ -29,15 +31,15 @@ final class MockAudioDeviceProvider: AudioDeviceProviding, @unchecked Sendable {
   nonisolated(unsafe) var lastSetInputID: AudioDeviceID?
   nonisolated(unsafe) var setInputShouldSucceed = true
 
-  // MARK: - Registered Listeners
-
-  nonisolated(unsafe) private var outputChangeHandler: (@Sendable () -> Void)?
-  nonisolated(unsafe) private var inputChangeHandler: (@Sendable () -> Void)?
-
   // MARK: - AudioDeviceProviding
 
-  func defaultInputID() -> AudioDeviceID? { currentInputID }
-  func defaultOutputID() -> AudioDeviceID? { currentOutputID }
+  func defaultInputID() -> AudioDeviceID? {
+    currentInputID
+  }
+
+  func defaultOutputID() -> AudioDeviceID? {
+    currentOutputID
+  }
 
   func name(of deviceID: AudioDeviceID) -> String? {
     switch deviceID {
@@ -60,10 +62,12 @@ final class MockAudioDeviceProvider: AudioDeviceProviding, @unchecked Sendable {
 
   func transportTypeName(of deviceID: AudioDeviceID) -> String {
     switch deviceID {
-    case Self.builtInMic, Self.builtInSpeaker:
+    case Self.builtInMic,
+         Self.builtInSpeaker:
       "built-in"
 
-    case Self.airPodsMic, Self.airPodsSpeaker:
+    case Self.airPodsMic,
+         Self.airPodsSpeaker:
       "bluetooth"
 
     default:
@@ -99,7 +103,9 @@ final class MockAudioDeviceProvider: AudioDeviceProviding, @unchecked Sendable {
   func addListener(
     selector: AudioObjectPropertySelector,
     handler: @escaping @Sendable () -> Void
-  ) -> (() -> Void)? {
+  )
+    -> (() -> Void)?
+  {
     if selector == kAudioHardwarePropertyDefaultOutputDevice {
       outputChangeHandler = handler
     } else if selector == kAudioHardwarePropertyDefaultInputDevice {
@@ -121,6 +127,13 @@ final class MockAudioDeviceProvider: AudioDeviceProviding, @unchecked Sendable {
     currentInputID = deviceID
     inputChangeHandler?()
   }
+
+  // MARK: Private
+
+  // MARK: - Registered Listeners
+
+  private nonisolated(unsafe) var outputChangeHandler: (@Sendable () -> Void)?
+  private nonisolated(unsafe) var inputChangeHandler: (@Sendable () -> Void)?
 }
 
 // MARK: - DecisionLogicTests
@@ -135,7 +148,7 @@ struct DecisionLogicTests {
 
   @MainActor
   @Test("Linked switch: input change within window triggers restore")
-  func linkedSwitchTriggersRestore() async {
+  func linkedSwitchTriggersRestore() {
     let mock = MockAudioDeviceProvider()
     let service = AudioSwitchService(
       windowDuration: 0.5,
@@ -170,7 +183,7 @@ struct DecisionLogicTests {
 
   @MainActor
   @Test("Manual switch: input change outside window updates previous device")
-  func manualSwitchUpdatesPreviousDevice() async {
+  func manualSwitchUpdatesPreviousDevice() {
     let mock = MockAudioDeviceProvider()
     let service = AudioSwitchService(
       windowDuration: 0.5,
@@ -231,7 +244,7 @@ struct DecisionLogicTests {
 
   @MainActor
   @Test("No restore when input already matches previous device")
-  func noRestoreWhenInputAlreadyMatches() async {
+  func noRestoreWhenInputAlreadyMatches() {
     let mock = MockAudioDeviceProvider()
     let service = AudioSwitchService(
       windowDuration: 0.5,
@@ -258,7 +271,7 @@ struct DecisionLogicTests {
 
   @MainActor
   @Test("Restore fails gracefully when setDefaultInput returns false")
-  func restoreFailsGracefully() async {
+  func restoreFailsGracefully() {
     let mock = MockAudioDeviceProvider()
     mock.setInputShouldSucceed = false
 
@@ -289,7 +302,7 @@ struct DecisionLogicTests {
 
   @MainActor
   @Test("Multiple output changes reset the window")
-  func multipleOutputChangesResetWindow() async {
+  func multipleOutputChangesResetWindow() {
     let mock = MockAudioDeviceProvider()
     let service = AudioSwitchService(
       windowDuration: 0.5,
@@ -314,7 +327,7 @@ struct DecisionLogicTests {
 
   @MainActor
   @Test("Closing window manually prevents restore")
-  func closingWindowPreventsRestore() async {
+  func closingWindowPreventsRestore() {
     let mock = MockAudioDeviceProvider()
     let service = AudioSwitchService(
       windowDuration: 0.5,

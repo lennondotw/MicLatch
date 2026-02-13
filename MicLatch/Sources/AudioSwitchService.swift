@@ -320,6 +320,11 @@ final class AudioSwitchService: ObservableObject {
     currentOutputName = newOutput
     Log.outputChanged(from: oldOutput, to: newOutput, transport: transport)
 
+    // Send notification for default output change
+    if let newOutput {
+      NotificationService.shared.notifyDefaultOutputChanged(from: oldOutput, to: newOutput)
+    }
+
     // Only enable protection for Bluetooth output switches (HFP concern)
     guard isBluetooth
     else {
@@ -367,6 +372,11 @@ final class AudioSwitchService: ObservableObject {
     }
 
     currentInputName = newInput
+
+    // Send notification for default input change (before potential restore)
+    if let newInput {
+      NotificationService.shared.notifyDefaultInputChanged(from: oldInput, to: newInput)
+    }
 
     if outputSwitchPending {
       handleLinkedInputChange(
@@ -423,6 +433,8 @@ final class AudioSwitchService: ObservableObject {
       currentInputName = previousName
       inputRestoreCount += 1
       lastInputChange = .restored(deviceName: previousName, timestamp: Date())
+      // Send notification for input restored (the primary feature)
+      NotificationService.shared.notifyInputRestored(deviceName: previousName)
     } else {
       Log.decisionSkip(reason: "failed to restore input to \(previousName)")
       lastInputChange = .restoreFailed(deviceName: previousName, timestamp: Date())
@@ -497,6 +509,20 @@ final class AudioSwitchService: ObservableObject {
       defaultInput: currentInputName,
       defaultOutput: currentOutputName
     )
+
+    // Send notifications for device changes (each event separately)
+    for device in removedDevices where device.hasInput {
+      NotificationService.shared.notifyInputDeviceRemoved(deviceName: device.name)
+    }
+    for device in removedDevices where device.hasOutput {
+      NotificationService.shared.notifyOutputDeviceRemoved(deviceName: device.name)
+    }
+    for device in addedDevices where device.hasInput {
+      NotificationService.shared.notifyInputDeviceConnected(deviceName: device.name)
+    }
+    for device in addedDevices where device.hasOutput {
+      NotificationService.shared.notifyOutputDeviceConnected(deviceName: device.name)
+    }
 
     // Update previous state for next comparison
     previousDeviceIDs = currentIDSet
