@@ -225,13 +225,15 @@ attributes:
     - "@IBInspectable"
     - "@objc"
     - "@GKInspectable"
-    - "@MainActor"
     - "@Sendable"
   always_on_line_above:
     - "@discardableResult"
     - "@available"
     - "@propertyWrapper"
     - "@resultBuilder"
+    - "@MainActor"
+    - "@Test"
+    - "@Suite"
 
 modifier_order:
   preferred_modifier_order:

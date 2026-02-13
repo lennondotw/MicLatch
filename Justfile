@@ -1,30 +1,24 @@
 # MicLatch - macOS Audio Routing Protection
 # Run `just` or `just --list` to see all available commands
-# ─────────────────────────────────────────────────────────────────────────────
-# Configuration
-# ─────────────────────────────────────────────────────────────────────────────
 
 project_name := "MicLatch"
 scheme := "MicLatch"
-destination := "platform=macOS"
 derived_data := ".build/DerivedData"
 app_path := derived_data / "Build/Products/Debug" / project_name + ".app"
 app_path_release := derived_data / "Build/Products/Release" / project_name + ".app"
 
-# Version info (auto-derived from project.yml)
-
+# Auto-derived from project.yml
 app_version := `grep 'MARKETING_VERSION:' project.yml | sed "s/.*['\"]\\([^'\"]*\\)['\"].*/\\1/"`
 app_build := `grep 'CURRENT_PROJECT_VERSION:' project.yml | sed "s/.*['\"]\\([^'\"]*\\)['\"].*/\\1/"`
 
 # Release configuration (fixed for distribution)
-
 release_team_id := "NAP6NNQHV6"
 
 default:
     @just --list
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Project Generation
+# Development
 # ─────────────────────────────────────────────────────────────────────────────
 
 # Generate Xcode project from project.yml
@@ -40,27 +34,15 @@ setup-lsp: generate
     jq '.build_root = "{{ justfile_directory() }}/{{ derived_data }}/{{ project_name }}"' buildServer.json > "$tmp" && mv "$tmp" buildServer.json
     echo "buildServer.json configured with local DerivedData"
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Build
-# ─────────────────────────────────────────────────────────────────────────────
-
-# Build Debug (no code signing - for local dev)
+# Build Debug configuration
 build: generate
     xcodebuild -scheme {{ scheme }} -configuration Debug -derivedDataPath {{ derived_data }} \
         CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO build | xcbeautify
 
-# Build Release (no code signing - for local dev)
+# Build Release configuration
 build-release: generate
     xcodebuild -scheme {{ scheme }} -configuration Release -derivedDataPath {{ derived_data }} \
         CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO build | xcbeautify
-
-# Build Release with signing (for distribution)
-build-release-signed: generate
-    xcodebuild -scheme {{ scheme }} -configuration Release -derivedDataPath {{ derived_data }} build | xcbeautify
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Run
-# ─────────────────────────────────────────────────────────────────────────────
 
 # Kill running app (if any)
 kill:
@@ -80,12 +62,9 @@ run-built-fg:
 # Build and run Debug in foreground (stdout/stderr in terminal)
 run-fg: kill build run-built-fg
 
-# Run Release build
-run-release-built:
-    open "{{ app_path_release }}"
-
-# Build and run Release
-run-release: kill build-release run-release-built
+# Stream app logs filtered by MicLatch subsystem (Ctrl-C to stop)
+logs:
+    log stream --level debug --predicate 'subsystem BEGINSWITH "com.reeky.MicLatch"'
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Test
@@ -104,25 +83,12 @@ test-run:
 # Build and run unit tests
 test: test-build test-run
 
-# Run Swift Package tests only
-test-package:
-    swift test
-
-# Run tests with coverage
-test-coverage: generate
-    xcodebuild test -scheme {{ scheme }} -destination "{{ destination }}" -derivedDataPath {{ derived_data }} \
-        -enableCodeCoverage YES CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO | xcbeautify
-
 # ─────────────────────────────────────────────────────────────────────────────
 # Code Quality
 # ─────────────────────────────────────────────────────────────────────────────
 
-# Run SwiftLint
+# Run SwiftLint (fails on warnings)
 lint:
-    swiftlint lint --config .swiftlint.yml
-
-# Run SwiftLint with strict mode (fails on warnings)
-lint-strict:
     swiftlint --strict --config .swiftlint.yml
 
 # Check formatting without changes
@@ -147,9 +113,7 @@ fix:
 
 # Clean build artifacts
 clean:
-    rm -rf {{ derived_data }}
-    rm -rf .build
-    rm -rf build
+    rm -rf {{ derived_data }} .build build
     @echo "Cleaned build artifacts"
 
 # Remove generated Xcode project
@@ -301,18 +265,6 @@ bump-build:
     echo "Run 'just generate' to apply."
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Logs & Debugging
-# ─────────────────────────────────────────────────────────────────────────────
-
-# Stream app logs filtered by MicLatch subsystem (Ctrl-C to stop)
-logs:
-    log stream --level debug --predicate 'subsystem BEGINSWITH "com.reeky.MicLatch"'
-
-# Show recent logs
-logs-recent:
-    log show --last 5m --predicate 'subsystem BEGINSWITH "com.reeky.MicLatch"' --style compact
-
-# ─────────────────────────────────────────────────────────────────────────────
 # Utilities
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -324,48 +276,7 @@ show-certs:
 xcode: generate
     open {{ project_name }}.xcodeproj
 
-# Show build settings (signing, bundle ID)
-show-settings:
-    xcodebuild -scheme {{ scheme }} -configuration Debug -showBuildSettings | grep -E "DEVELOPMENT_TEAM|CODE_SIGN|PRODUCT_BUNDLE"
-
 # Store notarization credentials in Keychain (one-time)
-
-# Usage: just setup-notarization your@apple.id
 setup-notarization apple_id:
     @echo "You'll need an App-Specific Password from https://account.apple.com"
     xcrun notarytool store-credentials AC_PASSWORD --apple-id "{{ apple_id }}" --team-id {{ release_team_id }}
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Setup
-# ─────────────────────────────────────────────────────────────────────────────
-
-# Show required dependencies
-setup:
-    @echo "📥 Required development dependencies:"
-    @echo ""
-    @echo "    brew install xcodegen swiftlint swiftformat just xcbeautify"
-    @echo "    brew install disclaim  # for run-fg commands"
-    @echo ""
-    @echo "Or run: just setup-force"
-
-# Install dependencies via Homebrew
-setup-force:
-    brew install xcodegen swiftlint swiftformat just xcbeautify disclaim || true
-    @echo "✅ Setup complete"
-
-# Verify toolchain versions
-verify:
-    @echo "Tool versions:"
-    @xcodebuild -version | head -1
-    @swift --version | head -1
-    @xcodegen --version || echo "❌ xcodegen not installed"
-    @swiftlint --version || echo "❌ swiftlint not installed"
-    @swiftformat --version || echo "❌ swiftformat not installed"
-    @xcbeautify --version || echo "❌ xcbeautify not installed"
-    @disclaim --version 2>/dev/null || echo "❌ disclaim not installed (needed for run-fg)"
-
-# Print project info
-info:
-    @echo "Project:  {{ project_name }}"
-    @echo "Version:  {{ app_version }} (build {{ app_build }})"
-    @echo "Team ID:  {{ release_team_id }} (release only)"

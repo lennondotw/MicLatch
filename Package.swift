@@ -6,7 +6,6 @@ let package = Package(
     name: "MicLatchKit",
     platforms: [
         .macOS(.v15),
-        .iOS(.v18),
     ],
     products: [
         .library(
@@ -14,13 +13,9 @@ let package = Package(
             targets: ["MicLatchKit"]
         ),
     ],
-    dependencies: [
-        // Add external dependencies here
-    ],
     targets: [
         .target(
             name: "MicLatchKit",
-            dependencies: [],
             path: "Sources/MicLatchKit",
             swiftSettings: [
                 .enableExperimentalFeature("StrictConcurrency"),

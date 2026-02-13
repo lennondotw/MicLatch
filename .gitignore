@@ -76,3 +76,4 @@ logs/
 
 # Cursor IDE
 .cursor/
+*.profraw

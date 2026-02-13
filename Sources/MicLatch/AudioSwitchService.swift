@@ -206,7 +206,7 @@ final class AudioSwitchService: ObservableObject {
         if outputSwitchPending {
             // Within window: check if this is a linked switch we should restore
             let elapsed = Date().timeIntervalSince(outputSwitchTime ?? Date())
-            let elapsedMs = Int(elapsed * 1_000)
+            let elapsedMs = Int(elapsed * 1000)
 
             Log.inputChanged(from: oldInput, to: newInput, isLinked: true)
 

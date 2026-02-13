@@ -10,7 +10,6 @@ name: MicLatch
 options:
   bundleIdPrefix: com.reeky
   deploymentTarget:
-    iOS: "18.0"
     macOS: "15.0"
   xcodeVersion: "26.2"
   generateEmptyDirectories: true
@@ -19,6 +18,16 @@ options:
   indentWidth: 4
   tabWidth: 4
   usesTabs: false
+  postGenCommand: |
+    for dir in \
+      MicLatch.xcodeproj/project.xcworkspace/xcshareddata \
+      "MicLatch.xcodeproj/project.xcworkspace/xcuserdata/${USER}.xcuserdatad"; do
+      mkdir -p "$dir"
+      WS="$dir/WorkspaceSettings.xcsettings"
+      plutil -create xml1 "$WS"
+      plutil -insert DerivedDataLocationStyle -string WorkspaceRelativePath "$WS"
+      plutil -insert DerivedDataCustomLocation -string .build/DerivedData "$WS"
+    done
 
 ############################################################
 # Settings

@@ -51,11 +51,11 @@
 --operatorfunc spaced
 --ranges spaced
 
-# Number formatting
---decimalgrouping 3
---hexgrouping 4
---binarygrouping 4
---octalgrouping 4
+# Number formatting (align with SwiftLint minimum_length: 5)
+--decimalgrouping 3,5
+--hexgrouping 4,5
+--binarygrouping 4,5
+--octalgrouping 4,5
 --hexliteralcase lowercase
 --exponentcase lowercase
 --fractiongrouping enabled
