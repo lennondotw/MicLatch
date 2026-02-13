@@ -28,7 +28,7 @@ jobs:
       - name: Install SwiftFormat
         run: brew install swiftformat
       - name: Check formatting
-        run: swiftformat --lint MicLatch MicLatchTests --config .swiftformat
+        run: swiftformat MicLatch MicLatchTests --config .swiftformat --lint
 
   build-and-test:
     name: Build & Test
