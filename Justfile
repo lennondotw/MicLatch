@@ -1,6 +1,8 @@
 # MicLatch - macOS Audio Routing Protection
 # Run `just` or `just --list` to see all available commands
 
+set shell := ["bash", "-eo", "pipefail", "-c"]
+
 project_name := "MicLatch"
 scheme := "MicLatch"
 derived_data := ".build/DerivedData"
