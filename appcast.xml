@@ -1,0 +1,14 @@
+<?xml version="1.0" standalone="yes"?>
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+    <channel>
+        <title>MicLatch</title>
+        <item>
+            <title>0.1.0</title>
+            <pubDate>Fri, 13 Feb 2026 07:35:40 +0000</pubDate>
+            <sparkle:version>2</sparkle:version>
+            <sparkle:shortVersionString>0.1.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/lennondotw/MicLatch/releases/download/v0.1.0/MicLatch-0.1.0.zip" length="1116424" type="application/octet-stream" sparkle:edSignature="uqKO9vhiexUr7/SjJys1PsxsOmc9mnC38lr8kGS59Yyb+HwgwZl6A/uqcJmjjjH00Dk7sLgv0PY0NyTHctNtDQ=="/>
+        </item>
+    </channel>
+</rss>
