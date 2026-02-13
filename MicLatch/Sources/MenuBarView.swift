@@ -15,6 +15,7 @@ struct MenuBarView: View {
 
   @ObservedObject var service: AudioSwitchService
   @ObservedObject var notificationSettings = NotificationService.shared.settings
+  @ObservedObject var launchAtLogin = LaunchAtLoginService.shared
 
   let updater: SPUUpdater
 
@@ -59,6 +60,9 @@ struct MenuBarView: View {
     Text("Last Change: \(formatLastInputChange(service.lastInputChange))")
 
     Divider()
+
+    // Launch at login toggle
+    Toggle("Launch at Login", isOn: $launchAtLogin.isEnabled)
 
     // Updates
     Button("Check for Updates…") {
@@ -105,13 +109,12 @@ struct MenuBarView: View {
 // MARK: - Preview
 
 #Preview {
-  let controller = SPUStandardUpdaterController(
-    startingUpdater: false,
-    updaterDelegate: nil,
-    userDriverDelegate: nil
-  )
-  return MenuBarView(
+  MenuBarView(
     service: AudioSwitchService(startImmediately: false),
-    updater: controller.updater
+    updater: SPUStandardUpdaterController(
+      startingUpdater: false,
+      updaterDelegate: nil,
+      userDriverDelegate: nil
+    ).updater
   )
 }
