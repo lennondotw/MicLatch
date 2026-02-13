@@ -6,9 +6,9 @@
             <title>0.2.0</title>
             <pubDate>Fri, 13 Feb 2026 10:23:45 +0000</pubDate>
             <sparkle:version>4</sparkle:version>
-            <sparkle:shortVersionString>0.2.0</sparkle:shortVersionString>
+            <sparkle:shortVersionString>0.3.0</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
-            <enclosure url="https://github.com/lennondotw/MicLatch/releases/download/v0.2.0/MicLatch-0.2.0.zip" length="1137401" type="application/octet-stream" sparkle:edSignature="3z2jtKhu8bYPveB137K0dbsUFSllaWrNf5a+9Hpthsb46oPd+nBITSJSM/g4iIHzkihrkCdoxPbuWhVWzKtMBg=="/>
+            <enclosure url="https://github.com/lennondotw/MicLatch/releases/download/v0.3.0/MicLatch-0.3.0.zip" length="1137553" type="application/octet-stream" sparkle:edSignature="uAJPpi0C+VoQymueC6BITuKHPvFrV4b4dGFmdLN9ULtuEcT6HBf7L/lypmJMRG2WQcnu5UEFEvaAqQwa6tFZAw=="/>
         </item>
         <item>
             <title>0.1.1</title>
