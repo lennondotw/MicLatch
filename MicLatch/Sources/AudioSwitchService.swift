@@ -159,6 +159,7 @@ final class AudioSwitchService: ObservableObject {
     let oldOutput = currentOutputName
     let newOutputID = AudioDevice.defaultOutputID()
     let newOutput = newOutputID.flatMap { AudioDevice.name(of: $0) }
+    let transport = newOutputID.map { AudioDevice.transportTypeName(of: $0) }
 
     // Skip if no actual change
     guard newOutput != oldOutput else {
@@ -166,7 +167,7 @@ final class AudioSwitchService: ObservableObject {
     }
 
     currentOutputName = newOutput
-    Log.outputChanged(from: oldOutput, to: newOutput)
+    Log.outputChanged(from: oldOutput, to: newOutput, transport: transport)
 
     // Record current input before system might change it
     if let currentInputID = AudioDevice.defaultInputID() {
@@ -198,6 +199,7 @@ final class AudioSwitchService: ObservableObject {
       return
     }
     let newInput = AudioDevice.name(of: newInputID)
+    let transport = AudioDevice.transportTypeName(of: newInputID)
 
     // Skip if no actual change
     guard newInput != oldInput else {
@@ -211,7 +213,7 @@ final class AudioSwitchService: ObservableObject {
       let elapsed = Date().timeIntervalSince(outputSwitchTime ?? Date())
       let elapsedMs = Int(elapsed * 1000)
 
-      Log.inputChanged(from: oldInput, to: newInput, isLinked: true)
+      Log.inputChanged(from: oldInput, to: newInput, transport: transport, isLinked: true)
 
       // Only restore if input changed to something different than our saved device
       if let previousID = previousInputDevice, newInputID != previousID {
@@ -230,7 +232,7 @@ final class AudioSwitchService: ObservableObject {
       }
     } else {
       // Outside window: this is a manual change, update our record
-      Log.inputChanged(from: oldInput, to: newInput, isLinked: false)
+      Log.inputChanged(from: oldInput, to: newInput, transport: transport, isLinked: false)
       previousInputDevice = newInputID
     }
   }
@@ -249,29 +251,18 @@ final class AudioSwitchService: ObservableObject {
   private func handleDeviceListChanged() {
     let allIDs = AudioDevice.allDeviceIDs()
 
-    // For debug logging, we'd need to track previous list to compute added/removed
-    // For now, just log the total count
-    Log.deviceListChanged(added: [], removed: [], total: allIDs.count)
-
-    // Log detailed info for each device at debug level
-    for id in allIDs {
-      let name = AudioDevice.name(of: id) ?? "unknown"
+    // Build device summary list
+    let deviceList: [(String, String, Bool, Bool)] = allIDs.compactMap { id in
+      guard let name = AudioDevice.name(of: id) else {
+        return nil
+      }
       let transport = AudioDevice.transportTypeName(of: id)
       let hasInput = AudioDevice.hasInput(id)
       let hasOutput = AudioDevice.hasOutput(id)
-      let isAlive = AudioDevice.isAlive(id)
-
-      Log.deviceState(
-        id: id,
-        name: name,
-        transportType: transport,
-        hasInput: hasInput,
-        hasOutput: hasOutput,
-        isAlive: isAlive
-      )
+      return (name, transport, hasInput, hasOutput)
     }
 
-    // Log current defaults
+    Log.deviceListChanged(devices: deviceList)
     Log.defaultDevices(input: currentInputName, output: currentOutputName)
   }
 }

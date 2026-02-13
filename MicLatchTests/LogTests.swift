@@ -20,10 +20,10 @@ struct LogTests {
   @Test("Event logging does not crash")
   func eventLoggingDoesNotCrash() {
     // These should not throw or crash
-    Log.outputChanged(from: "Device A", to: "Device B")
-    Log.outputChanged(from: nil, to: "Device B")
-    Log.inputChanged(from: "Mic A", to: "Mic B", isLinked: true)
-    Log.inputChanged(from: "Mic A", to: "Mic B", isLinked: false)
+    Log.outputChanged(from: "Device A", to: "Device B", transport: "bluetooth")
+    Log.outputChanged(from: nil, to: "Device B", transport: nil)
+    Log.inputChanged(from: "Mic A", to: "Mic B", transport: "built-in", isLinked: true)
+    Log.inputChanged(from: "Mic A", to: "Mic B", transport: nil, isLinked: false)
     Log.windowStateChanged(isOpen: true, reason: "output changed")
     Log.windowStateChanged(isOpen: false, reason: "timer expired")
   }
@@ -37,17 +37,12 @@ struct LogTests {
 
   @Test("Device debug logging does not crash")
   func deviceLoggingDoesNotCrash() {
-    Log.deviceListChanged(added: ["AirPods Pro"], removed: [], total: 5)
-    Log.deviceListChanged(added: [], removed: ["AirPods Pro"], total: 4)
-    Log.deviceListChanged(added: ["Device A"], removed: ["Device B"], total: 4)
-    Log.deviceState(
-      id: 42,
-      name: "AirPods Pro",
-      transportType: "bluetooth",
-      hasInput: true,
-      hasOutput: true,
-      isAlive: true
-    )
+    Log.deviceListChanged(devices: [
+      ("AirPods Pro", "bluetooth", true, true),
+      ("MacBook Pro Microphone", "built-in", true, false),
+      ("MacBook Pro Speakers", "built-in", false, true),
+    ])
+    Log.deviceListChanged(devices: [])
     Log.defaultDevices(input: "MacBook Microphone", output: "AirPods Pro")
     Log.defaultDevices(input: nil, output: nil)
   }

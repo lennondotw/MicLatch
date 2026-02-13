@@ -24,20 +24,34 @@ enum Log {
   // MARK: - Event Logging
 
   /// Log output device change.
-  static func outputChanged(from oldDevice: String?, to newDevice: String?) {
+  static func outputChanged(
+    from oldDevice: String?,
+    to newDevice: String?,
+    transport: String?
+  ) {
     let fromStr = oldDevice ?? "(none)"
     let toStr = newDevice ?? "(none)"
-    events.info("📤 OUTPUT | \"\(fromStr, privacy: .public)\" → \"\(toStr, privacy: .public)\"")
+    let transportStr = transport.map { " [\($0)]" } ?? ""
+    events
+      .info(
+        "📤 OUTPUT | \"\(fromStr, privacy: .public)\" → \"\(toStr, privacy: .public)\"\(transportStr, privacy: .public)"
+      )
   }
 
   /// Log input device change.
-  static func inputChanged(from oldDevice: String?, to newDevice: String?, isLinked: Bool) {
+  static func inputChanged(
+    from oldDevice: String?,
+    to newDevice: String?,
+    transport: String?,
+    isLinked: Bool
+  ) {
     let fromStr = oldDevice ?? "(none)"
     let toStr = newDevice ?? "(none)"
-    let linkTag = isLinked ? " [linked]" : ""
+    let transportStr = transport.map { " [\($0)]" } ?? ""
+    let linkTag = isLinked ? " (linked)" : ""
     events
       .info(
-        "📥 INPUT  | \"\(fromStr, privacy: .public)\" → \"\(toStr, privacy: .public)\"\(linkTag, privacy: .public)"
+        "📥 INPUT  | \"\(fromStr, privacy: .public)\" → \"\(toStr, privacy: .public)\"\(transportStr, privacy: .public)\(linkTag, privacy: .public)"
       )
   }
 
@@ -66,29 +80,14 @@ enum Log {
 
   // MARK: - Device Debug Logging
 
-  /// Log device list changes.
-  static func deviceListChanged(added: [String], removed: [String], total: Int) {
-    let addedStr = added.isEmpty ? "[]" : "[\(added.joined(separator: ", "))]"
-    let removedStr = removed.isEmpty ? "[]" : "[\(removed.joined(separator: ", "))]"
-    devices.debug("🔌 DEVICES | +\(addedStr, privacy: .public) -\(removedStr, privacy: .public) | total: \(total)")
-  }
-
-  /// Log detailed device state.
-  static func deviceState(
-    id: UInt32,
-    name: String,
-    transportType: String,
-    hasInput: Bool,
-    hasOutput: Bool,
-    isAlive: Bool
-  ) {
-    devices.debug(
-      """
-      📱 DEVICE  | id=\(id) name=\"\(name, privacy: .public)\" \
-      transport=\(transportType, privacy: .public) \
-      input=\(hasInput) output=\(hasOutput) alive=\(isAlive)
-      """
-    )
+  /// Log device list change with device summary.
+  /// - Parameter devices: Array of (name, transport, hasInput, hasOutput) tuples.
+  static func deviceListChanged(devices list: [(String, String, Bool, Bool)]) {
+    let summary = list.map { name, transport, hasIn, hasOut in
+      let caps = [hasIn ? "in" : nil, hasOut ? "out" : nil].compactMap(\.self).joined(separator: "+")
+      return "\(name)(\(transport),\(caps))"
+    }.joined(separator: ", ")
+    devices.debug("🔌 DEVICES | count=\(list.count) | \(summary, privacy: .public)")
   }
 
   /// Log current default devices.
