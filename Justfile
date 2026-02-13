@@ -51,24 +51,23 @@ build: generate
 build-release: generate
     xcodebuild -scheme {{ scheme }} -configuration Release -derivedDataPath {{ derived_data }} build | xcbeautify
 
-# Kill running app (if any)
-kill:
+# Kill running Debug app (if any)
+kill-debug:
     @-pkill -x "{{ app_name_debug }}" 2>/dev/null || true
-    @-pkill -x "{{ app_name_release }}" 2>/dev/null || true
 
 # Run already-built Debug app (requires prior `just build`)
 run-built:
     open "{{ app_path }}"
 
 # Build and run Debug app
-run: kill build run-built
+run: kill-debug build run-built
 
 # Run already-built Debug app in foreground (stdout/stderr in terminal)
 run-built-fg:
     disclaim "{{ app_path }}/Contents/MacOS/{{ app_name_debug }}"
 
 # Build and run Debug in foreground (stdout/stderr in terminal)
-run-fg: kill build run-built-fg
+run-fg: kill-debug build run-built-fg
 
 # Stream app logs filtered by MicLatch subsystem (Ctrl-C to stop)
 logs:
