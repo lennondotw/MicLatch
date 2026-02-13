@@ -52,12 +52,19 @@ struct MenuBarView: View {
     Divider()
 
     // Statistics
-    // - Linked Restores: Input device auto-restored after Bluetooth output switch within time window
-    // - Unlinked Switches: Input changes outside time window or from non-Bluetooth devices
-    // - Last Change: Most recent input change event with status (Restored/Failed/Non-Linked)
-    Text("Linked Restores: \(service.inputRestoreCount)")
-    Text("Unlinked Switches: \(service.nonLinkedInputSwitchCount)")
-    Text("Last Change: \(formatLastInputChange(service.lastInputChange))")
+    Text("Linked Input Change: \(service.inputRestoreCount)")
+    Text("Unlinked Input Change: \(service.nonLinkedInputSwitchCount)")
+
+    // Event History submenu
+    Menu("Event History") {
+      if service.eventHistory.isEmpty {
+        Text("No events yet")
+      } else {
+        ForEach(service.eventHistory) { event in
+          Text("\(Self.timeFormatter.string(from: event.timestamp)) \(event.description)")
+        }
+      }
+    }
 
     Divider()
 
@@ -88,22 +95,6 @@ struct MenuBarView: View {
     formatter.dateStyle = .none
     return formatter
   }()
-
-  private func formatLastInputChange(_ change: LastInputChange?) -> String {
-    guard let change else {
-      return "None"
-    }
-    switch change {
-    case let .restored(deviceName, timestamp):
-      return "Restored → \(deviceName) (at \(Self.timeFormatter.string(from: timestamp)))"
-
-    case let .restoreFailed(deviceName, timestamp):
-      return "Failed → \(deviceName) (at \(Self.timeFormatter.string(from: timestamp)))"
-
-    case let .nonLinked(_, to, timestamp):
-      return "Unlinked → \(to) (at \(Self.timeFormatter.string(from: timestamp)))"
-    }
-  }
 }
 
 // MARK: - Preview

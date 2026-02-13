@@ -148,6 +148,9 @@ final class AudioSwitchService: ObservableObject {
   /// The most recent input change event.
   @Published private(set) var lastInputChange: LastInputChange?
 
+  /// History of audio events (most recent first, limited to last 20).
+  @Published private(set) var eventHistory: [AudioEvent] = []
+
   // MARK: - Configuration
 
   /// Duration of the time window after output change (in seconds).
@@ -239,6 +242,9 @@ final class AudioSwitchService: ObservableObject {
 
   // MARK: Private
 
+  /// Maximum number of events to keep in history.
+  private let maxEventHistory = 20
+
   // MARK: - Private State
 
   /// The input device ID to restore to when linked switch detected.
@@ -320,8 +326,9 @@ final class AudioSwitchService: ObservableObject {
     currentOutputName = newOutput
     Log.outputChanged(from: oldOutput, to: newOutput, transport: transport)
 
-    // Send notification for default output change
+    // Record event and send notification for default output change
     if let newOutput {
+      addEvent(.outputChanged(from: oldOutput, to: newOutput))
       NotificationService.shared.notifyDefaultOutputChanged(from: oldOutput, to: newOutput)
     }
 
@@ -373,8 +380,9 @@ final class AudioSwitchService: ObservableObject {
 
     currentInputName = newInput
 
-    // Send notification for default input change (before potential restore)
+    // Record event and send notification for default input change (before potential restore)
     if let newInput {
+      addEvent(.inputChanged(from: oldInput, to: newInput))
       NotificationService.shared.notifyDefaultInputChanged(from: oldInput, to: newInput)
     }
 
@@ -421,6 +429,9 @@ final class AudioSwitchService: ObservableObject {
 
     Log.inputChanged(from: oldInput, to: newInput, transport: transport, isLinked: true)
 
+    // Record linked input change event
+    addEvent(.linkedInputChange(from: oldInput ?? "(none)", to: newInput ?? "(none)"))
+
     // Only restore if input changed to something different than our saved device
     guard let previousID = previousInputDevice, newInputID != previousID else {
       Log.decisionNoChange(currentDevice: newInput ?? "unknown")
@@ -433,11 +444,13 @@ final class AudioSwitchService: ObservableObject {
       currentInputName = previousName
       inputRestoreCount += 1
       lastInputChange = .restored(deviceName: previousName, timestamp: Date())
+      addEvent(.inputRestored(deviceName: previousName))
       // Send notification for input restored (the primary feature)
       NotificationService.shared.notifyInputRestored(deviceName: previousName)
     } else {
       Log.decisionSkip(reason: "failed to restore input to \(previousName)")
       lastInputChange = .restoreFailed(deviceName: previousName, timestamp: Date())
+      addEvent(.restoreFailed(deviceName: previousName))
     }
   }
 
@@ -458,6 +471,7 @@ final class AudioSwitchService: ObservableObject {
       to: newInput ?? "(none)",
       timestamp: Date()
     )
+    addEvent(.unlinkedInputChange(from: oldInput ?? "(none)", to: newInput ?? "(none)"))
   }
 
   private func handleWindowExpired() {
@@ -469,6 +483,15 @@ final class AudioSwitchService: ObservableObject {
     pendingTimer = nil
 
     Log.windowStateChanged(isOpen: false, reason: "timer expired")
+  }
+
+  /// Add an event to the history (most recent first, limited size).
+  private func addEvent(_ type: AudioEvent.EventType) {
+    let event = AudioEvent(type: type, timestamp: Date())
+    eventHistory.insert(event, at: 0)
+    if eventHistory.count > maxEventHistory {
+      eventHistory.removeLast()
+    }
   }
 
   private func handleDeviceListChanged() {
@@ -510,17 +533,21 @@ final class AudioSwitchService: ObservableObject {
       defaultOutput: currentOutputName
     )
 
-    // Send notifications for device changes (each event separately)
+    // Record events and send notifications for device changes
     for device in removedDevices where device.hasInput {
+      addEvent(.inputDeviceRemoved(deviceName: device.name))
       NotificationService.shared.notifyInputDeviceRemoved(deviceName: device.name)
     }
     for device in removedDevices where device.hasOutput {
+      addEvent(.outputDeviceRemoved(deviceName: device.name))
       NotificationService.shared.notifyOutputDeviceRemoved(deviceName: device.name)
     }
     for device in addedDevices where device.hasInput {
+      addEvent(.inputDeviceConnected(deviceName: device.name))
       NotificationService.shared.notifyInputDeviceConnected(deviceName: device.name)
     }
     for device in addedDevices where device.hasOutput {
+      addEvent(.outputDeviceConnected(deviceName: device.name))
       NotificationService.shared.notifyOutputDeviceConnected(deviceName: device.name)
     }
 
