@@ -19,6 +19,16 @@ import OSLog
 enum Log {
   // MARK: Internal
 
+  // MARK: - Device Debug Logging
+
+  /// Summary info for a single device.
+  struct DeviceInfo {
+    let name: String
+    let transport: String
+    let hasInput: Bool
+    let hasOutput: Bool
+  }
+
   static let subsystem = "sh.lennon.MicLatch"
 
   // MARK: - Event Logging
@@ -78,15 +88,16 @@ enum Log {
     decisions.notice("🔄 NO_CHANGE | Input already \"\(currentDevice, privacy: .public)\"")
   }
 
-  // MARK: - Device Debug Logging
-
   /// Log device list change with device summary.
-  /// - Parameter devices: Array of (name, transport, hasInput, hasOutput) tuples.
-  static func deviceListChanged(devices list: [(String, String, Bool, Bool)]) {
-    let summary = list.map { name, transport, hasIn, hasOut in
-      let caps = [hasIn ? "in" : nil, hasOut ? "out" : nil].compactMap(\.self).joined(separator: "+")
-      return "\(name)(\(transport),\(caps))"
-    }.joined(separator: ", ")
+  static func deviceListChanged(devices list: [DeviceInfo]) {
+    let summary = list
+      .map { info in
+        let caps = [info.hasInput ? "in" : nil, info.hasOutput ? "out" : nil]
+          .compactMap(\.self)
+          .joined(separator: "+")
+        return "\(info.name)(\(info.transport),\(caps))"
+      }
+      .joined(separator: ", ")
     devices.debug("🔌 DEVICES | count=\(list.count) | \(summary, privacy: .public)")
   }
 

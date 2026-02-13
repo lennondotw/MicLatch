@@ -252,14 +252,16 @@ final class AudioSwitchService: ObservableObject {
     let allIDs = AudioDevice.allDeviceIDs()
 
     // Build device summary list
-    let deviceList: [(String, String, Bool, Bool)] = allIDs.compactMap { id in
+    let deviceList: [Log.DeviceInfo] = allIDs.compactMap { id in
       guard let name = AudioDevice.name(of: id) else {
         return nil
       }
-      let transport = AudioDevice.transportTypeName(of: id)
-      let hasInput = AudioDevice.hasInput(id)
-      let hasOutput = AudioDevice.hasOutput(id)
-      return (name, transport, hasInput, hasOutput)
+      return Log.DeviceInfo(
+        name: name,
+        transport: AudioDevice.transportTypeName(of: id),
+        hasInput: AudioDevice.hasInput(id),
+        hasOutput: AudioDevice.hasOutput(id)
+      )
     }
 
     Log.deviceListChanged(devices: deviceList)

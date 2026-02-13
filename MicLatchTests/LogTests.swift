@@ -38,9 +38,9 @@ struct LogTests {
   @Test("Device debug logging does not crash")
   func deviceLoggingDoesNotCrash() {
     Log.deviceListChanged(devices: [
-      ("AirPods Pro", "bluetooth", true, true),
-      ("MacBook Pro Microphone", "built-in", true, false),
-      ("MacBook Pro Speakers", "built-in", false, true),
+      Log.DeviceInfo(name: "AirPods Pro", transport: "bluetooth", hasInput: true, hasOutput: true),
+      Log.DeviceInfo(name: "MacBook Pro Microphone", transport: "built-in", hasInput: true, hasOutput: false),
+      Log.DeviceInfo(name: "MacBook Pro Speakers", transport: "built-in", hasInput: false, hasOutput: true),
     ])
     Log.deviceListChanged(devices: [])
     Log.defaultDevices(input: "MacBook Microphone", output: "AirPods Pro")
