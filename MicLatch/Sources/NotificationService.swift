@@ -124,17 +124,32 @@ final class NotificationService {
   }
 
   /// Notify that the default input device changed.
-  func notifyDefaultInputChanged(from oldDevice: String?, to newDevice: String) {
+  func notifyDefaultInputChanged(
+    from oldDevice: String?,
+    to newDevice: String,
+    context: InputChangeContext = .standalone
+  ) {
     guard settings.defaultInputChanged else {
       return
     }
+    let title =
+      switch context {
+      case .standalone:
+        "Default Input Changed"
+
+      case .linked:
+        "Input Changed (Linked)"
+
+      case .unlinked:
+        "Input Changed (Unlinked)"
+      }
     let body =
       if let oldDevice {
         "\"\(newDevice)\" (was \"\(oldDevice)\")"
       } else {
         "\"\(newDevice)\""
       }
-    send(title: "Default Input Changed", body: body)
+    send(title: title, body: body)
   }
 
   /// Notify that the default output device changed.

@@ -380,11 +380,8 @@ final class AudioSwitchService: ObservableObject {
 
     currentInputName = newInput
 
-    // Record event and send notification for default input change (before potential restore)
-    if let newInput {
-      addEvent(.inputChanged(from: oldInput, to: newInput))
-      NotificationService.shared.notifyDefaultInputChanged(from: oldInput, to: newInput)
-    }
+    // Event recording and notification are handled in handleLinkedInputChange/recordNonLinkedChange
+    // to provide proper context (linked/unlinked)
 
     if outputSwitchPending {
       handleLinkedInputChange(
@@ -429,8 +426,11 @@ final class AudioSwitchService: ObservableObject {
 
     Log.inputChanged(from: oldInput, to: newInput, transport: transport, isLinked: true)
 
-    // Record linked input change event
-    addEvent(.linkedInputChange(from: oldInput ?? "(none)", to: newInput ?? "(none)"))
+    // Record input change event with linked context
+    if let newInput {
+      addEvent(.inputChanged(from: oldInput, to: newInput, context: .linked))
+      NotificationService.shared.notifyDefaultInputChanged(from: oldInput, to: newInput, context: .linked)
+    }
 
     // Only restore if input changed to something different than our saved device
     guard let previousID = previousInputDevice, newInputID != previousID else {
@@ -471,7 +471,12 @@ final class AudioSwitchService: ObservableObject {
       to: newInput ?? "(none)",
       timestamp: Date()
     )
-    addEvent(.unlinkedInputChange(from: oldInput ?? "(none)", to: newInput ?? "(none)"))
+
+    // Record input change event with unlinked context
+    if let newInput {
+      addEvent(.inputChanged(from: oldInput, to: newInput, context: .unlinked))
+      NotificationService.shared.notifyDefaultInputChanged(from: oldInput, to: newInput, context: .unlinked)
+    }
   }
 
   private func handleWindowExpired() {
