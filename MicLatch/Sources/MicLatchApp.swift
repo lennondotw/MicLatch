@@ -5,6 +5,7 @@
 //  Copyright © 2026 Mingxuan Wang. All rights reserved.
 //
 
+import MenuBarExtraAccess
 import Sparkle
 import SwiftUI
 
@@ -29,14 +30,24 @@ struct MicLatchApp: App {
       MenuBarView(service: service, updater: updaterController.updater)
     } label: {
       Image(systemName: service.isMonitoring ? "microphone.badge.plus.fill" : "microphone.slash.fill")
-        .symbolRenderingMode(.hierarchical)
-        .foregroundStyle(service.isMonitoring ? .primary : .secondary)
+    }
+    .menuBarExtraAccess(isPresented: .constant(false)) { item in
+      statusItem = item
+      updateStatusItemAppearance()
+    }
+    .onChange(of: service.isMonitoring) {
+      updateStatusItemAppearance()
     }
   }
 
   // MARK: Private
 
   @StateObject private var service = AudioSwitchService()
+  @State private var statusItem: NSStatusItem?
 
   private let updaterController: SPUStandardUpdaterController
+
+  private func updateStatusItemAppearance() {
+    statusItem?.button?.appearsDisabled = !service.isMonitoring
+  }
 }

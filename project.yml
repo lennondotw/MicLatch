@@ -65,6 +65,9 @@ packages:
   Sparkle:
     url: https://github.com/sparkle-project/Sparkle
     from: '2.8.1'
+  MenuBarExtraAccess:
+    url: https://github.com/orchetect/MenuBarExtraAccess
+    from: '1.0.0'
 
 ############################################################
 # Targets
@@ -83,6 +86,7 @@ targets:
       - path: MicLatch/Resources
     dependencies:
       - package: Sparkle
+      - package: MenuBarExtraAccess
     settings:
       base:
         MARKETING_VERSION: '0.1.0'
