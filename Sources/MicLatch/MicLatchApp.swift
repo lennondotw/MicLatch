@@ -12,37 +12,13 @@ import SwiftUI
 
 @main
 struct MicLatchApp: App {
+    @StateObject private var service = AudioSwitchService()
+
     var body: some Scene {
-        WindowGroup {
-            ContentView()
+        MenuBarExtra {
+            MenuBarView(service: service)
+        } label: {
+            Label("MicLatch", systemImage: service.isMonitoring ? "mic.fill" : "mic.slash")
         }
     }
-}
-
-// MARK: - ContentView
-
-struct ContentView: View {
-    var body: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "mic.fill")
-                .font(.system(size: 60))
-                .foregroundStyle(.tint)
-
-            Text("MicLatch")
-                .font(.largeTitle)
-                .fontWeight(.bold)
-
-            Text("Version \(MicLatchKit.version)")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-        }
-        .padding(40)
-        .frame(minWidth: 300, minHeight: 200)
-    }
-}
-
-// MARK: - Preview
-
-#Preview {
-    ContentView()
 }
