@@ -1,20 +1,19 @@
 //
 //  MicLatchTests.swift
-//  MicLatchTests
+//  MicLatch
 //
-//  Created by Developer on 13/02/2026.
+//  Created by Developer on 2/13/26.
 //
-
-import Testing
 
 @testable import MicLatchKit
+import Testing
 
 // MARK: - MicLatchTests
 
 @Suite("MicLatch Tests")
 struct MicLatchTests {
     @Test("App launches successfully")
-    func appLaunches() async throws {
+    func appLaunches() {
         // Placeholder test - add actual app tests here
         #expect(true)
     }

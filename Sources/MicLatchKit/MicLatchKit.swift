@@ -1,8 +1,8 @@
 //
 //  MicLatchKit.swift
-//  MicLatchKit
+//  MicLatch
 //
-//  Created by Developer on 13/02/2026.
+//  Created by Developer on 2/13/26.
 //
 
 import Foundation

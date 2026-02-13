@@ -1,25 +1,24 @@
 //
 //  MicLatchKitTests.swift
-//  MicLatchKitTests
+//  MicLatch
 //
-//  Created by Developer on 13/02/2026.
+//  Created by Developer on 2/13/26.
 //
-
-import Testing
 
 @testable import MicLatchKit
+import Testing
 
 // MARK: - MicLatchKitTests
 
 @Suite("MicLatchKit Tests")
 struct MicLatchKitTests {
     @Test("Version is correct")
-    func versionIsCorrect() async throws {
+    func versionIsCorrect() {
         #expect(MicLatchKit.version == "1.0.0")
     }
 
     @Test("Version is not empty")
-    func versionNotEmpty() async throws {
+    func versionNotEmpty() {
         #expect(!MicLatchKit.version.isEmpty)
     }
 }

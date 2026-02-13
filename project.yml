@@ -127,7 +127,6 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.reeky.MicLatchTests
-        INFOPLIST_FILE: Tests/MicLatchTests/Info.plist
         GENERATE_INFOPLIST_FILE: true
         TEST_HOST: "$(BUILT_PRODUCTS_DIR)/MicLatch.app/Contents/MacOS/MicLatch"
         BUNDLE_LOADER: "$(TEST_HOST)"
