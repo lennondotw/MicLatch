@@ -3,6 +3,14 @@
     <channel>
         <title>MicLatch</title>
         <item>
+            <title>0.2.0</title>
+            <pubDate>Fri, 13 Feb 2026 10:23:45 +0000</pubDate>
+            <sparkle:version>4</sparkle:version>
+            <sparkle:shortVersionString>0.2.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/lennondotw/MicLatch/releases/download/v0.2.0/MicLatch-0.2.0.zip" length="1137401" type="application/octet-stream" sparkle:edSignature="3z2jtKhu8bYPveB137K0dbsUFSllaWrNf5a+9Hpthsb46oPd+nBITSJSM/g4iIHzkihrkCdoxPbuWhVWzKtMBg=="/>
+        </item>
+        <item>
             <title>0.1.1</title>
             <pubDate>Fri, 13 Feb 2026 07:45:53 +0000</pubDate>
             <sparkle:version>3</sparkle:version>
