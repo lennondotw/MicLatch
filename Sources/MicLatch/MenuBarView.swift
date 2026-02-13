@@ -102,7 +102,7 @@ struct MenuBarView: View {
 
     private var footerSection: some View {
         HStack {
-            Text("v\(Bundle.main.appVersion)")
+            Text("v\(AppInfo.version)")
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
 

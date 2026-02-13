@@ -8,7 +8,7 @@ name: MicLatch
 ############################################################
 
 options:
-  bundleIdPrefix: com.reeky
+  bundleIdPrefix: sh.lennon
   deploymentTarget:
     macOS: "15.0"
   xcodeVersion: "26.2"
@@ -79,7 +79,7 @@ targets:
           - "**/.DS_Store"
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.reeky.MicLatch
+        PRODUCT_BUNDLE_IDENTIFIER: sh.lennon.MicLatch
         MARKETING_VERSION: "1.0.0"
         CURRENT_PROJECT_VERSION: "1"
         INFOPLIST_FILE: Sources/MicLatch/Info.plist
@@ -89,6 +89,9 @@ targets:
         ENABLE_HARDENED_RUNTIME: true
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: ""
+      configs:
+        Debug:
+          PRODUCT_BUNDLE_IDENTIFIER: sh.lennon.MicLatch.debug
     preBuildScripts:
       - name: "SwiftLint"
         basedOnDependencyAnalysis: false
@@ -124,7 +127,7 @@ targets:
       - target: MicLatch
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.reeky.MicLatchTests
+        PRODUCT_BUNDLE_IDENTIFIER: sh.lennon.MicLatchTests
         GENERATE_INFOPLIST_FILE: true
         TEST_HOST: "$(BUILT_PRODUCTS_DIR)/MicLatch.app/Contents/MacOS/MicLatch"
         BUNDLE_LOADER: "$(TEST_HOST)"

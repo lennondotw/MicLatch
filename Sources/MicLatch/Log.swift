@@ -19,7 +19,7 @@ import OSLog
 enum Log {
     // MARK: Internal
 
-    static let subsystem = "com.reeky.MicLatch"
+    static let subsystem = "sh.lennon.MicLatch"
 
     // MARK: - Event Logging
 

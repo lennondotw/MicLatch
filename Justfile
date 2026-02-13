@@ -66,7 +66,7 @@ run-fg: kill build run-built-fg
 
 # Stream app logs filtered by MicLatch subsystem (Ctrl-C to stop)
 logs:
-    log stream --level debug --predicate 'subsystem BEGINSWITH "com.reeky.MicLatch"'
+    log stream --level debug --predicate 'subsystem BEGINSWITH "sh.lennon.MicLatch"'
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Test

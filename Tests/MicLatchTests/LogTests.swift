@@ -14,7 +14,7 @@ import Testing
 struct LogTests {
     @Test("Log subsystem is correctly configured")
     func subsystemIsCorrect() {
-        #expect(Log.subsystem == "com.reeky.MicLatch")
+        #expect(Log.subsystem == "sh.lennon.MicLatch")
     }
 
     @Test("Event logging does not crash")
