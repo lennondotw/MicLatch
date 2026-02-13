@@ -61,14 +61,6 @@ configs:
   Release: release
 
 ############################################################
-# Packages
-############################################################
-
-packages:
-  MicLatchKit:
-    path: .
-
-############################################################
 # Targets
 ############################################################
 
@@ -85,8 +77,6 @@ targets:
       - path: Sources/MicLatch
         excludes:
           - "**/.DS_Store"
-    dependencies:
-      - package: MicLatchKit
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.reeky.MicLatch
@@ -132,31 +122,12 @@ targets:
           - "**/.DS_Store"
     dependencies:
       - target: MicLatch
-      - package: MicLatchKit
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.reeky.MicLatchTests
         GENERATE_INFOPLIST_FILE: true
         TEST_HOST: "$(BUILT_PRODUCTS_DIR)/MicLatch.app/Contents/MacOS/MicLatch"
         BUNDLE_LOADER: "$(TEST_HOST)"
-
-  # ──────────────────────────────────────────────────────────
-  # MicLatchKitTests (Swift Package Tests)
-  # ──────────────────────────────────────────────────────────
-
-  MicLatchKitTests:
-    type: bundle.unit-test
-    platform: macOS
-    sources:
-      - path: Tests/MicLatchKitTests
-        excludes:
-          - "**/.DS_Store"
-    dependencies:
-      - package: MicLatchKit
-    settings:
-      base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.reeky.MicLatchKitTests
-        GENERATE_INFOPLIST_FILE: true
 
 ############################################################
 # Schemes
@@ -168,7 +139,6 @@ schemes:
       targets:
         MicLatch: all
         MicLatchTests: [test]
-        MicLatchKitTests: [test]
     run:
       config: Debug
       commandLineArguments:
@@ -178,7 +148,6 @@ schemes:
       gatherCoverageData: true
       targets:
         - MicLatchTests
-        - MicLatchKitTests
     profile:
       config: Release
     analyze:

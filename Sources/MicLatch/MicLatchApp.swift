@@ -5,7 +5,6 @@
 //  Created by Developer on 2/13/26.
 //
 
-import MicLatchKit
 import SwiftUI
 
 // MARK: - MicLatchApp

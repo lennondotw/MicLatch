@@ -5,7 +5,6 @@
 //  Created by Developer on 2/13/26.
 //
 
-import MicLatchKit
 import SwiftUI
 
 // MARK: - MenuBarView
@@ -103,7 +102,7 @@ struct MenuBarView: View {
 
     private var footerSection: some View {
         HStack {
-            Text("v\(MicLatchKit.version)")
+            Text("v\(Bundle.main.appVersion)")
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
 
