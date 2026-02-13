@@ -58,7 +58,7 @@ enum Log {
     let fromStr = oldDevice ?? "(none)"
     let toStr = newDevice ?? "(none)"
     let transportStr = transport.map { " [\($0)]" } ?? ""
-    let linkTag = isLinked ? " (linked)" : ""
+    let linkTag = isLinked ? " (linked)" : " (non-linked)"
     events
       .notice(
         "📥 INPUT  | \"\(fromStr, privacy: .public)\" → \"\(toStr, privacy: .public)\"\(transportStr, privacy: .public)\(linkTag, privacy: .public)"
@@ -167,7 +167,12 @@ enum Log {
     }
   }
 
-  // MARK: - UI Debug Logging
+  // MARK: - Debug Logging
+
+  /// Log general debug information.
+  static func debug(_ message: String) {
+    events.debug("🔧 DEBUG  | \(message, privacy: .public)")
+  }
 
   /// Log UI-related debug information.
   static func uiDebug(_ message: String) {

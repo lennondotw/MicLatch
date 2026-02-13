@@ -17,6 +17,7 @@ protocol AudioDeviceProviding: Sendable {
   func defaultOutputID() -> AudioDeviceID?
   func name(of deviceID: AudioDeviceID) -> String?
   func transportTypeName(of deviceID: AudioDeviceID) -> String
+  func isBluetooth(_ deviceID: AudioDeviceID) -> Bool
   func setDefaultInput(_ deviceID: AudioDeviceID) -> Bool
   func allDeviceIDs() -> [AudioDeviceID]
   func hasInput(_ deviceID: AudioDeviceID) -> Bool
@@ -46,6 +47,10 @@ struct RealAudioDeviceProvider: AudioDeviceProviding {
 
   func transportTypeName(of deviceID: AudioDeviceID) -> String {
     AudioDevice.transportTypeName(of: deviceID)
+  }
+
+  func isBluetooth(_ deviceID: AudioDeviceID) -> Bool {
+    AudioDevice.isBluetooth(deviceID)
   }
 
   func setDefaultInput(_ deviceID: AudioDeviceID) -> Bool {
@@ -84,8 +89,8 @@ enum LastInputChange: Equatable {
   /// Restore attempt failed.
   case restoreFailed(deviceName: String, timestamp: Date)
 
-  /// Manual input switch (outside time window).
-  case manual(from: String, to: String, timestamp: Date)
+  /// Non-linked input switch (outside time window, or non-Bluetooth device).
+  case nonLinked(from: String, to: String, timestamp: Date)
 }
 
 // MARK: - AudioSwitchService
@@ -145,7 +150,7 @@ final class AudioSwitchService: ObservableObject {
   @Published private(set) var inputRestoreCount = 0
 
   /// Count of manual input switches (outside time window).
-  @Published private(set) var manualInputSwitchCount = 0
+  @Published private(set) var nonLinkedInputSwitchCount = 0
 
   /// The most recent input change event.
   @Published private(set) var lastInputChange: LastInputChange?
@@ -313,9 +318,13 @@ final class AudioSwitchService: ObservableObject {
 
   private func handleOutputChanged() {
     let oldOutput = currentOutputName
-    let newOutputID = deviceProvider.defaultOutputID()
-    let newOutput = newOutputID.flatMap { deviceProvider.name(of: $0) }
-    let transport = newOutputID.map { deviceProvider.transportTypeName(of: $0) }
+    guard let newOutputID = deviceProvider.defaultOutputID()
+    else {
+      return
+    }
+    let newOutput = deviceProvider.name(of: newOutputID)
+    let transport = deviceProvider.transportTypeName(of: newOutputID)
+    let isBluetooth = deviceProvider.isBluetooth(newOutputID)
 
     // Skip if no actual change
     guard newOutput != oldOutput else {
@@ -325,12 +334,19 @@ final class AudioSwitchService: ObservableObject {
     currentOutputName = newOutput
     Log.outputChanged(from: oldOutput, to: newOutput, transport: transport)
 
+    // Only enable protection for Bluetooth output switches (HFP concern)
+    guard isBluetooth
+    else {
+      Log.debug("Output is not Bluetooth, skipping protection window")
+      return
+    }
+
     // Record current input before system might change it
     if let currentInputID = deviceProvider.defaultInputID() {
       previousInputDevice = currentInputID
       Log.windowStateChanged(
         isOpen: true,
-        reason: "output changed to \(newOutput ?? "unknown")"
+        reason: "Bluetooth output changed to \(newOutput ?? "unknown")"
       )
     }
 
@@ -351,55 +367,99 @@ final class AudioSwitchService: ObservableObject {
 
   private func handleInputChanged() {
     let oldInput = currentInputName
-    guard let newInputID = deviceProvider.defaultInputID() else {
+    guard let newInputID = deviceProvider.defaultInputID()
+    else {
       return
     }
     let newInput = deviceProvider.name(of: newInputID)
     let transport = deviceProvider.transportTypeName(of: newInputID)
 
     // Skip if no actual change
-    guard newInput != oldInput else {
+    guard newInput != oldInput
+    else {
       return
     }
 
     currentInputName = newInput
 
     if outputSwitchPending {
-      // Within window: check if this is a linked switch we should restore
-      let elapsed = Date().timeIntervalSince(outputSwitchTime ?? Date())
-      let elapsedMs = Int(elapsed * 1000)
-
-      Log.inputChanged(from: oldInput, to: newInput, transport: transport, isLinked: true)
-
-      // Only restore if input changed to something different than our saved device
-      if let previousID = previousInputDevice, newInputID != previousID {
-        let previousName = deviceProvider.name(of: previousID) ?? "unknown"
-
-        // Attempt to restore
-        if deviceProvider.setDefaultInput(previousID) {
-          Log.decisionRestore(to: previousName, elapsedMs: elapsedMs)
-          currentInputName = previousName
-          inputRestoreCount += 1
-          lastInputChange = .restored(deviceName: previousName, timestamp: Date())
-        } else {
-          Log.decisionSkip(reason: "failed to restore input to \(previousName)")
-          lastInputChange = .restoreFailed(deviceName: previousName, timestamp: Date())
-        }
-      } else {
-        // Input is already what we want (maybe we just set it)
-        Log.decisionNoChange(currentDevice: newInput ?? "unknown")
-      }
+      handleLinkedInputChange(
+        newInputID: newInputID,
+        newInput: newInput,
+        oldInput: oldInput,
+        transport: transport
+      )
     } else {
-      // Outside window: this is a manual change, update our record
-      Log.inputChanged(from: oldInput, to: newInput, transport: transport, isLinked: false)
-      previousInputDevice = newInputID
-      manualInputSwitchCount += 1
-      lastInputChange = .manual(
-        from: oldInput ?? "(none)",
-        to: newInput ?? "(none)",
-        timestamp: Date()
+      recordNonLinkedChange(
+        newInputID: newInputID,
+        newInput: newInput,
+        oldInput: oldInput,
+        transport: transport
       )
     }
+  }
+
+  private func handleLinkedInputChange(
+    newInputID: AudioDeviceID,
+    newInput: String?,
+    oldInput: String?,
+    transport: String
+  ) {
+    let elapsed = Date().timeIntervalSince(outputSwitchTime ?? Date())
+    let elapsedMs = Int(elapsed * 1000)
+    let isBluetooth = deviceProvider.isBluetooth(newInputID)
+
+    // Only restore if input switched to a Bluetooth device (HFP concern)
+    guard isBluetooth else {
+      Log.inputChanged(from: oldInput, to: newInput, transport: transport, isLinked: false)
+      Log.debug("Input is not Bluetooth, treating as non-linked change")
+      recordNonLinkedChange(
+        newInputID: newInputID,
+        newInput: newInput,
+        oldInput: oldInput,
+        transport: transport,
+        skipLog: true
+      )
+      return
+    }
+
+    Log.inputChanged(from: oldInput, to: newInput, transport: transport, isLinked: true)
+
+    // Only restore if input changed to something different than our saved device
+    guard let previousID = previousInputDevice, newInputID != previousID else {
+      Log.decisionNoChange(currentDevice: newInput ?? "unknown")
+      return
+    }
+
+    let previousName = deviceProvider.name(of: previousID) ?? "unknown"
+    if deviceProvider.setDefaultInput(previousID) {
+      Log.decisionRestore(to: previousName, elapsedMs: elapsedMs)
+      currentInputName = previousName
+      inputRestoreCount += 1
+      lastInputChange = .restored(deviceName: previousName, timestamp: Date())
+    } else {
+      Log.decisionSkip(reason: "failed to restore input to \(previousName)")
+      lastInputChange = .restoreFailed(deviceName: previousName, timestamp: Date())
+    }
+  }
+
+  private func recordNonLinkedChange(
+    newInputID: AudioDeviceID,
+    newInput: String?,
+    oldInput: String?,
+    transport: String,
+    skipLog: Bool = false
+  ) {
+    if !skipLog {
+      Log.inputChanged(from: oldInput, to: newInput, transport: transport, isLinked: false)
+    }
+    previousInputDevice = newInputID
+    nonLinkedInputSwitchCount += 1
+    lastInputChange = .nonLinked(
+      from: oldInput ?? "(none)",
+      to: newInput ?? "(none)",
+      timestamp: Date()
+    )
   }
 
   private func handleWindowExpired() {

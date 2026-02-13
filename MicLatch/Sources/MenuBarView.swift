@@ -26,7 +26,7 @@ struct MenuBarView: View {
 
     // Statistics
     Text("Linked Input Change Restores: \(service.inputRestoreCount)")
-    Text("Manual Input Switches: \(service.manualInputSwitchCount)")
+    Text("Non-Linked Input Switches: \(service.nonLinkedInputSwitchCount)")
     Text("Last Input Change: \(formatLastInputChange(service.lastInputChange, at: service.currentTime))")
 
     Divider()
@@ -69,8 +69,8 @@ struct MenuBarView: View {
     case let .restoreFailed(deviceName, timestamp):
       return "Failed → \(deviceName) (\(relativeTime(from: timestamp, to: now)))"
 
-    case let .manual(_, to, timestamp):
-      return "Manual → \(to) (\(relativeTime(from: timestamp, to: now)))"
+    case let .nonLinked(_, to, timestamp):
+      return "Non-Linked → \(to) (\(relativeTime(from: timestamp, to: now)))"
     }
   }
 

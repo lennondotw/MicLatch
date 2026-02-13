@@ -12,14 +12,15 @@ When you connect AirPods or other Bluetooth headphones to your Mac, macOS automa
 
 ## The Solution
 
-MicLatch monitors audio device changes and intelligently restores your preferred input device when macOS performs a "linked switch" — where an output device change automatically triggers an input device change.
+MicLatch monitors audio device changes and intelligently restores your preferred input device when macOS performs a "linked switch" — where a Bluetooth output device change automatically triggers an input device change.
 
 **Key Features:**
 
-- Detects system-initiated input switches vs. user manual changes
+- **Bluetooth-aware**: Only triggers protection when Bluetooth devices are involved (both output and input)
+- Detects system-initiated linked switches vs. non-linked changes
 - Restores your *previous* input device, not a hardcoded one
 - Uses a time-window algorithm (2s) to distinguish linked switches
-- **Statistics dashboard**: tracks restore count and manual switch count
+- **Statistics dashboard**: tracks restore count and non-linked switch count
 - **Last Input Change**: shows the most recent input action with status
 - Lightweight menu bar app with minimal resource usage
 - Built-in auto-update via Sparkle
@@ -28,7 +29,7 @@ MicLatch monitors audio device changes and intelligently restores your preferred
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  Output Switch Detected (e.g., AirPods connected)               │
+│  Bluetooth Output Switch Detected (e.g., AirPods connected)     │
 │                           │                                     │
 │                           ▼                                     │
 │              Record current input device                        │
@@ -36,12 +37,14 @@ MicLatch monitors audio device changes and intelligently restores your preferred
 │                           │                                     │
 │                           ▼                                     │
 │  ┌─────────────────────────────────────────────────────────┐   │
-│  │ Input switch within window?                              │   │
+│  │ Bluetooth input switch within window?                    │   │
 │  │   YES → System linked switch → Restore previous input    │   │
-│  │   NO  → User manual switch → Do nothing                  │   │
+│  │   NO  → Non-linked switch → Do nothing                   │   │
 │  └─────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────┘
 ```
+
+**Note:** Protection only activates when **both** the output and input switches involve Bluetooth devices. This avoids false positives when connecting USB audio interfaces, HDMI displays, or other non-Bluetooth devices.
 
 ## Requirements
 
@@ -64,11 +67,11 @@ The app will automatically check for updates via Sparkle.
 
 - **Output/Input**: Current audio devices
 - **Linked Input Change Restores**: How many times linked switches were prevented
-- **Manual Input Switches**: User-initiated input changes (outside time window)
+- **Non-Linked Input Switches**: Input changes outside time window or non-Bluetooth devices
 - **Last Input Change**: Most recent input action with status:
   - Restored → device was successfully restored
   - Failed → restore attempt failed (device unavailable)
-  - Manual → user manually changed input
+  - Non-Linked → input changed outside protection scope
 
 ## Development
 

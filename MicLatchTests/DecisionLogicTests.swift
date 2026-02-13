@@ -71,6 +71,10 @@ final class MockAudioDeviceProvider: AudioDeviceProviding, @unchecked Sendable {
     }
   }
 
+  func isBluetooth(_ deviceID: AudioDeviceID) -> Bool {
+    deviceID == Self.airPodsMic || deviceID == Self.airPodsSpeaker
+  }
+
   func setDefaultInput(_ deviceID: AudioDeviceID) -> Bool {
     setInputCalled = true
     lastSetInputID = deviceID
