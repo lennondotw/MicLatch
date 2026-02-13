@@ -8,6 +8,71 @@
 import CoreAudio
 import Foundation
 
+// MARK: - AudioDeviceProviding
+
+/// Protocol for audio device operations, enabling dependency injection for testing.
+protocol AudioDeviceProviding: Sendable {
+  func defaultInputID() -> AudioDeviceID?
+  func defaultOutputID() -> AudioDeviceID?
+  func name(of deviceID: AudioDeviceID) -> String?
+  func transportTypeName(of deviceID: AudioDeviceID) -> String
+  func setDefaultInput(_ deviceID: AudioDeviceID) -> Bool
+  func allDeviceIDs() -> [AudioDeviceID]
+  func hasInput(_ deviceID: AudioDeviceID) -> Bool
+  func hasOutput(_ deviceID: AudioDeviceID) -> Bool
+  func addListener(
+    selector: AudioObjectPropertySelector,
+    handler: @escaping @Sendable () -> Void
+  )
+    -> (() -> Void)?
+}
+
+// MARK: - RealAudioDeviceProvider
+
+/// Production implementation that delegates to AudioDevice.
+struct RealAudioDeviceProvider: AudioDeviceProviding {
+  func defaultInputID() -> AudioDeviceID? {
+    AudioDevice.defaultInputID()
+  }
+
+  func defaultOutputID() -> AudioDeviceID? {
+    AudioDevice.defaultOutputID()
+  }
+
+  func name(of deviceID: AudioDeviceID) -> String? {
+    AudioDevice.name(of: deviceID)
+  }
+
+  func transportTypeName(of deviceID: AudioDeviceID) -> String {
+    AudioDevice.transportTypeName(of: deviceID)
+  }
+
+  func setDefaultInput(_ deviceID: AudioDeviceID) -> Bool {
+    AudioDevice.setDefaultInput(deviceID)
+  }
+
+  func allDeviceIDs() -> [AudioDeviceID] {
+    AudioDevice.allDeviceIDs()
+  }
+
+  func hasInput(_ deviceID: AudioDeviceID) -> Bool {
+    AudioDevice.hasInput(deviceID)
+  }
+
+  func hasOutput(_ deviceID: AudioDeviceID) -> Bool {
+    AudioDevice.hasOutput(deviceID)
+  }
+
+  func addListener(
+    selector: AudioObjectPropertySelector,
+    handler: @escaping @Sendable () -> Void
+  )
+    -> (() -> Void)?
+  {
+    AudioDevice.addListener(selector: selector, handler: handler)
+  }
+}
+
 // MARK: - AudioSwitchService
 
 /// Service that monitors audio device changes and restores input device
@@ -17,7 +82,7 @@ import Foundation
 ///
 /// When the output device changes (e.g., switching to AirPods):
 /// 1. We record the current input device as `previousInputDevice`
-/// 2. We open a time window (`windowDuration`, default 500ms)
+/// 2. We open a time window (`windowDuration`, default 2s)
 /// 3. If input changes within this window, we assume it's a system-linked switch
 /// 4. We restore the input to `previousInputDevice`
 /// 5. After the window expires, any input change is considered manual
@@ -28,8 +93,13 @@ final class AudioSwitchService: ObservableObject {
 
   // MARK: - Initialization
 
-  init(windowDuration: TimeInterval = 0.5, startImmediately: Bool = true) {
+  init(
+    windowDuration: TimeInterval = 2.0,
+    startImmediately: Bool = true,
+    deviceProvider: any AudioDeviceProviding = RealAudioDeviceProvider()
+  ) {
     self.windowDuration = windowDuration
+    self.deviceProvider = deviceProvider
     if startImmediately {
       start()
     }
@@ -53,6 +123,9 @@ final class AudioSwitchService: ObservableObject {
   /// Duration of the time window after output change (in seconds).
   let windowDuration: TimeInterval
 
+  /// The audio device provider (injectable for testing).
+  let deviceProvider: any AudioDeviceProviding
+
   // MARK: - Public API
 
   /// Start monitoring audio device changes.
@@ -62,12 +135,26 @@ final class AudioSwitchService: ObservableObject {
     }
 
     // Record initial state
-    if let inputID = AudioDevice.defaultInputID() {
+    if let inputID = deviceProvider.defaultInputID() {
       previousInputDevice = inputID
-      currentInputName = AudioDevice.name(of: inputID)
+      currentInputName = deviceProvider.name(of: inputID)
     }
-    if let outputID = AudioDevice.defaultOutputID() {
-      currentOutputName = AudioDevice.name(of: outputID)
+    if let outputID = deviceProvider.defaultOutputID() {
+      currentOutputName = deviceProvider.name(of: outputID)
+    }
+
+    // Initialize device list state for change detection
+    let allIDs = deviceProvider.allDeviceIDs()
+    previousDeviceIDs = Set(allIDs)
+    for id in allIDs {
+      if let name = deviceProvider.name(of: id) {
+        previousDeviceInfos[id] = Log.DeviceInfo(
+          name: name,
+          transport: deviceProvider.transportTypeName(of: id),
+          hasInput: deviceProvider.hasInput(id),
+          hasOutput: deviceProvider.hasOutput(id)
+        )
+      }
     }
 
     setupListeners()
@@ -96,6 +183,30 @@ final class AudioSwitchService: ObservableObject {
     Log.serviceStopped()
   }
 
+  // MARK: - Testing Support
+
+  #if DEBUG
+    /// Simulate an output device change (for testing).
+    func simulateOutputChanged() {
+      handleOutputChanged()
+    }
+
+    /// Simulate an input device change (for testing).
+    func simulateInputChanged() {
+      handleInputChanged()
+    }
+
+    /// Check if the time window is currently open (for testing).
+    var isWindowOpen: Bool {
+      outputSwitchPending
+    }
+
+    /// Force close the time window (for testing).
+    func closeWindow() {
+      handleWindowExpired()
+    }
+  #endif
+
   // MARK: Private
 
   // MARK: - Private State
@@ -115,11 +226,17 @@ final class AudioSwitchService: ObservableObject {
   /// Listener cleanup closures.
   private var listenerRemovers: [() -> Void] = []
 
+  /// Previous device IDs for change detection.
+  private var previousDeviceIDs: Set<AudioDeviceID> = []
+
+  /// Previous device info for removed device logging.
+  private var previousDeviceInfos: [AudioDeviceID: Log.DeviceInfo] = [:]
+
   // MARK: - Private Methods
 
   private func setupListeners() {
     // Listen for output device changes
-    if let remove = AudioDevice.addListener(
+    if let remove = deviceProvider.addListener(
       selector: kAudioHardwarePropertyDefaultOutputDevice,
       handler: { [weak self] in
         Task { @MainActor in
@@ -131,7 +248,7 @@ final class AudioSwitchService: ObservableObject {
     }
 
     // Listen for input device changes
-    if let remove = AudioDevice.addListener(
+    if let remove = deviceProvider.addListener(
       selector: kAudioHardwarePropertyDefaultInputDevice,
       handler: { [weak self] in
         Task { @MainActor in
@@ -143,7 +260,7 @@ final class AudioSwitchService: ObservableObject {
     }
 
     // Listen for device list changes (debug logging)
-    if let remove = AudioDevice.addListener(
+    if let remove = deviceProvider.addListener(
       selector: kAudioHardwarePropertyDevices,
       handler: { [weak self] in
         Task { @MainActor in
@@ -157,9 +274,9 @@ final class AudioSwitchService: ObservableObject {
 
   private func handleOutputChanged() {
     let oldOutput = currentOutputName
-    let newOutputID = AudioDevice.defaultOutputID()
-    let newOutput = newOutputID.flatMap { AudioDevice.name(of: $0) }
-    let transport = newOutputID.map { AudioDevice.transportTypeName(of: $0) }
+    let newOutputID = deviceProvider.defaultOutputID()
+    let newOutput = newOutputID.flatMap { deviceProvider.name(of: $0) }
+    let transport = newOutputID.map { deviceProvider.transportTypeName(of: $0) }
 
     // Skip if no actual change
     guard newOutput != oldOutput else {
@@ -170,7 +287,7 @@ final class AudioSwitchService: ObservableObject {
     Log.outputChanged(from: oldOutput, to: newOutput, transport: transport)
 
     // Record current input before system might change it
-    if let currentInputID = AudioDevice.defaultInputID() {
+    if let currentInputID = deviceProvider.defaultInputID() {
       previousInputDevice = currentInputID
       Log.windowStateChanged(
         isOpen: true,
@@ -195,11 +312,11 @@ final class AudioSwitchService: ObservableObject {
 
   private func handleInputChanged() {
     let oldInput = currentInputName
-    guard let newInputID = AudioDevice.defaultInputID() else {
+    guard let newInputID = deviceProvider.defaultInputID() else {
       return
     }
-    let newInput = AudioDevice.name(of: newInputID)
-    let transport = AudioDevice.transportTypeName(of: newInputID)
+    let newInput = deviceProvider.name(of: newInputID)
+    let transport = deviceProvider.transportTypeName(of: newInputID)
 
     // Skip if no actual change
     guard newInput != oldInput else {
@@ -217,10 +334,10 @@ final class AudioSwitchService: ObservableObject {
 
       // Only restore if input changed to something different than our saved device
       if let previousID = previousInputDevice, newInputID != previousID {
-        let previousName = AudioDevice.name(of: previousID) ?? "unknown"
+        let previousName = deviceProvider.name(of: previousID) ?? "unknown"
 
         // Attempt to restore
-        if AudioDevice.setDefaultInput(previousID) {
+        if deviceProvider.setDefaultInput(previousID) {
           Log.decisionRestore(to: previousName, elapsedMs: elapsedMs)
           currentInputName = previousName
         } else {
@@ -249,22 +366,46 @@ final class AudioSwitchService: ObservableObject {
   }
 
   private func handleDeviceListChanged() {
-    let allIDs = AudioDevice.allDeviceIDs()
+    let allIDs = deviceProvider.allDeviceIDs()
+    let currentIDSet = Set(allIDs)
 
-    // Build device summary list
-    let deviceList: [Log.DeviceInfo] = allIDs.compactMap { id in
-      guard let name = AudioDevice.name(of: id) else {
-        return nil
+    // Build device info map
+    var deviceInfoMap: [AudioDeviceID: Log.DeviceInfo] = [:]
+    for id in allIDs {
+      guard let name = deviceProvider.name(of: id) else {
+        continue
       }
-      return Log.DeviceInfo(
+      deviceInfoMap[id] = Log.DeviceInfo(
         name: name,
-        transport: AudioDevice.transportTypeName(of: id),
-        hasInput: AudioDevice.hasInput(id),
-        hasOutput: AudioDevice.hasOutput(id)
+        transport: deviceProvider.transportTypeName(of: id),
+        hasInput: deviceProvider.hasInput(id),
+        hasOutput: deviceProvider.hasOutput(id)
       )
     }
 
-    Log.deviceListChanged(devices: deviceList)
-    Log.defaultDevices(input: currentInputName, output: currentOutputName)
+    // Detect added and removed devices
+    let addedIDs = currentIDSet.subtracting(previousDeviceIDs)
+    let removedIDs = previousDeviceIDs.subtracting(currentIDSet)
+
+    let addedDevices = addedIDs.compactMap { deviceInfoMap[$0] }
+    let removedDevices = removedIDs.compactMap { previousDeviceInfos[$0] }
+
+    // Build separate input and output lists
+    let inputDevices = deviceInfoMap.values.filter(\.hasInput)
+    let outputDevices = deviceInfoMap.values.filter(\.hasOutput)
+
+    // Log the changes
+    Log.deviceListChanged(
+      inputs: Array(inputDevices),
+      outputs: Array(outputDevices),
+      added: addedDevices,
+      removed: removedDevices,
+      defaultInput: currentInputName,
+      defaultOutput: currentOutputName
+    )
+
+    // Update previous state for next comparison
+    previousDeviceIDs = currentIDSet
+    previousDeviceInfos = deviceInfoMap
   }
 }

@@ -9,6 +9,80 @@ import MenuBarExtraAccess
 import Sparkle
 import SwiftUI
 
+// MARK: - StatusItemController
+
+/// Handles Option+Click on the menu bar status item using local event monitor.
+/// Normal clicks let the system show the menu naturally.
+@MainActor
+private final class StatusItemController {
+  // MARK: Internal
+
+  weak var statusItem: NSStatusItem?
+  var onOptionClick: (() -> Void)?
+
+  /// Configures the status item for Option+Click handling.
+  func configure(statusItem: NSStatusItem) {
+    guard self.statusItem !== statusItem
+    else {
+      return
+    }
+    self.statusItem = statusItem
+    startMonitor()
+    Log.uiDebug("StatusItemController configured")
+  }
+
+  // MARK: Private
+
+  private var monitor: Any?
+
+  private func startMonitor() {
+    guard monitor == nil
+    else {
+      return
+    }
+
+    // Use local monitor - it can consume the event to prevent menu
+    monitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDown) { [weak self] event in
+      guard let self,
+            let button = statusItem?.button,
+            let buttonWindow = button.window
+      else {
+        return event
+      }
+
+      // Check if click is on our status item
+      let clickLocation = NSEvent.mouseLocation
+      let buttonFrame = buttonWindow.convertToScreen(button.convert(button.bounds, to: nil))
+      guard buttonFrame.contains(clickLocation) else {
+        return event
+      }
+
+      // Check if Option key is pressed
+      if event.modifierFlags.contains(.option) {
+        Log.uiDebug("Option+Click detected")
+
+        // Show native highlight feedback
+        button.isHighlighted = true
+
+        // Clear highlight on mouse up
+        var mouseUpMonitor: Any?
+        mouseUpMonitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseUp) { event in
+          button.isHighlighted = false
+          if let monitor = mouseUpMonitor {
+            NSEvent.removeMonitor(monitor)
+          }
+          return event
+        }
+
+        onOptionClick?()
+        return nil // Consume event to prevent menu
+      }
+
+      return event // Let system handle normal click (show menu)
+    }
+  }
+}
+
 // MARK: - MicLatchApp
 
 @main
@@ -31,22 +105,22 @@ struct MicLatchApp: App {
     } label: {
       menuBarIcon
     }
-    .menuBarExtraAccess(isPresented: $menuPresented) { item in
-      statusItem = item
-      updateStatusItemAppearance()
-    }
-    .onChange(of: service.isMonitoring) {
-      updateStatusItemAppearance()
-    }
-    .onChange(of: menuPresented) { _, isPresented in
-      // Option+Click: toggle monitoring without showing menu
-      if isPresented, NSEvent.modifierFlags.contains(.option) {
-        menuPresented = false
+    .menuBarExtraAccess(isPresented: .constant(false)) { item in
+      // Fix width to prevent jumping when icon changes
+      item.length = 24
+      statusItemController.configure(statusItem: item)
+      statusItemController.onOptionClick = { [service] in
         if service.isMonitoring {
           service.stop()
         } else {
           service.start()
         }
+      }
+      updateStatusItemAppearance(item)
+    }
+    .onChange(of: service.isMonitoring) {
+      if let item = statusItemController.statusItem {
+        updateStatusItemAppearance(item)
       }
     }
   }
@@ -54,16 +128,14 @@ struct MicLatchApp: App {
   // MARK: Private
 
   @StateObject private var service = AudioSwitchService()
-  @State private var statusItem: NSStatusItem?
-  @State private var menuPresented = false
 
   private let updaterController: SPUStandardUpdaterController
+  private let statusItemController = StatusItemController()
 
   private var iconName: String {
     service.isMonitoring ? "microphone.badge.plus.fill" : "microphone.slash.fill"
   }
 
-  // swiftlint:disable:next attributes
   @ViewBuilder
   private var menuBarIcon: some View {
     #if DEBUG
@@ -137,7 +209,7 @@ struct MicLatchApp: App {
     }
   #endif
 
-  private func updateStatusItemAppearance() {
-    statusItem?.button?.appearsDisabled = !service.isMonitoring
+  private func updateStatusItemAppearance(_ item: NSStatusItem) {
+    item.button?.appearsDisabled = !service.isMonitoring
   }
 }

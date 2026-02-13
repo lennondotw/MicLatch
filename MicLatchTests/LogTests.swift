@@ -12,9 +12,11 @@ import Testing
 
 @Suite("Log Tests")
 struct LogTests {
-  @Test("Log subsystem is correctly configured")
-  func subsystemIsCorrect() {
-    #expect(Log.subsystem == "sh.lennon.MicLatch")
+  @Test("Log subsystem matches bundle identifier")
+  func subsystemMatchesBundleIdentifier() {
+    // In Debug builds, bundle ID is "sh.lennon.MicLatch.debug"
+    // In Release builds, bundle ID is "sh.lennon.MicLatch"
+    #expect(Log.subsystem.hasPrefix("sh.lennon.MicLatch"))
   }
 
   @Test("Event logging does not crash")
@@ -37,12 +39,48 @@ struct LogTests {
 
   @Test("Device debug logging does not crash")
   func deviceLoggingDoesNotCrash() {
-    Log.deviceListChanged(devices: [
-      Log.DeviceInfo(name: "AirPods Pro", transport: "bluetooth", hasInput: true, hasOutput: true),
-      Log.DeviceInfo(name: "MacBook Pro Microphone", transport: "built-in", hasInput: true, hasOutput: false),
-      Log.DeviceInfo(name: "MacBook Pro Speakers", transport: "built-in", hasInput: false, hasOutput: true),
-    ])
-    Log.deviceListChanged(devices: [])
+    let airPods = Log.DeviceInfo(
+      name: "AirPods Pro",
+      transport: "bluetooth",
+      hasInput: true,
+      hasOutput: true
+    )
+    let macMic = Log.DeviceInfo(
+      name: "MacBook Pro Microphone",
+      transport: "built-in",
+      hasInput: true,
+      hasOutput: false
+    )
+    let macSpeaker = Log.DeviceInfo(
+      name: "MacBook Pro Speakers",
+      transport: "built-in",
+      hasInput: false,
+      hasOutput: true
+    )
+
+    let oldDevice = Log.DeviceInfo(
+      name: "Old Device",
+      transport: "usb",
+      hasInput: true,
+      hasOutput: false
+    )
+
+    Log.deviceListChanged(
+      inputs: [airPods, macMic],
+      outputs: [airPods, macSpeaker],
+      added: [airPods],
+      removed: [oldDevice],
+      defaultInput: "MacBook Microphone",
+      defaultOutput: "AirPods Pro"
+    )
+    Log.deviceListChanged(
+      inputs: [],
+      outputs: [],
+      added: [],
+      removed: [],
+      defaultInput: nil,
+      defaultOutput: nil
+    )
     Log.defaultDevices(input: "MacBook Microphone", output: "AirPods Pro")
     Log.defaultDevices(input: nil, output: nil)
   }

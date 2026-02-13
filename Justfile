@@ -5,7 +5,7 @@ set shell := ["bash", "-eo", "pipefail", "-c"]
 
 project_name := "MicLatch"
 scheme := "MicLatch"
-derived_data := ".build/DerivedData"
+derived_data := "build/DerivedData"
 # Debug app has "MicLatch Debug" as PRODUCT_NAME
 app_name_debug := "MicLatch Debug"
 app_name_release := "MicLatch"
@@ -120,7 +120,7 @@ fix:
 
 # Clean build artifacts
 clean:
-    rm -rf {{ derived_data }} .build build
+    rm -rf {{ derived_data }} build
     @echo "Cleaned build artifacts"
 
 # Remove generated Xcode project

@@ -29,7 +29,7 @@ enum Log {
     let hasOutput: Bool
   }
 
-  static let subsystem = "sh.lennon.MicLatch"
+  static let subsystem = Bundle.main.bundleIdentifier ?? "sh.lennon.MicLatch"
 
   // MARK: - Event Logging
 
@@ -88,17 +88,55 @@ enum Log {
     decisions.notice("🔄 NO_CHANGE | Input already \"\(currentDevice, privacy: .public)\"")
   }
 
-  /// Log device list change with device summary.
-  static func deviceListChanged(devices list: [DeviceInfo]) {
-    let summary = list
-      .map { info in
-        let caps = [info.hasInput ? "in" : nil, info.hasOutput ? "out" : nil]
-          .compactMap(\.self)
-          .joined(separator: "+")
-        return "\(info.name)(\(info.transport),\(caps))"
-      }
+  /// Log device list change with separated input/output summaries.
+  static func deviceListChanged(
+    inputs: [DeviceInfo],
+    outputs: [DeviceInfo],
+    added: [DeviceInfo],
+    removed: [DeviceInfo],
+    defaultInput: String?,
+    defaultOutput: String?
+  ) {
+    // Event header
+    devices.notice("───────────────────── DEVICE LIST CHANGED ─────────────────────")
+
+    // Log changes first if any
+    for device in added {
+      let caps = [device.hasInput ? "in" : nil, device.hasOutput ? "out" : nil]
+        .compactMap(\.self)
+        .joined(separator: "+")
+      devices
+        .notice(
+          "➕ ADDED   | \"\(device.name, privacy: .public)\" [\(device.transport, privacy: .public)] (\(caps, privacy: .public))"
+        )
+    }
+    for device in removed {
+      let caps = [device.hasInput ? "in" : nil, device.hasOutput ? "out" : nil]
+        .compactMap(\.self)
+        .joined(separator: "+")
+      devices
+        .notice(
+          "➖ REMOVED | \"\(device.name, privacy: .public)\" [\(device.transport, privacy: .public)] (\(caps, privacy: .public))"
+        )
+    }
+
+    // Log input devices
+    let inputSummary = inputs
+      .map { "\($0.name)[\($0.transport)]" }
       .joined(separator: ", ")
-    devices.notice("🔌 DEVICES | count=\(list.count) | \(summary, privacy: .public)")
+    devices.notice("🎤 INPUTS  | count=\(inputs.count) | \(inputSummary, privacy: .public)")
+
+    // Log output devices
+    let outputSummary = outputs
+      .map { "\($0.name)[\($0.transport)]" }
+      .joined(separator: ", ")
+    devices.notice("🔊 OUTPUTS | count=\(outputs.count) | \(outputSummary, privacy: .public)")
+
+    // Log defaults and event footer
+    let inputStr = defaultInput ?? "(none)"
+    let outputStr = defaultOutput ?? "(none)"
+    devices.notice("🎯 DEFAULTS | input=\"\(inputStr, privacy: .public)\" output=\"\(outputStr, privacy: .public)\"")
+    devices.notice("────────────────────── DEVICE LIST CHANGED END ───────────────────")
   }
 
   /// Log current default devices.
@@ -129,6 +167,13 @@ enum Log {
     }
   }
 
+  // MARK: - UI Debug Logging
+
+  /// Log UI-related debug information.
+  static func uiDebug(_ message: String) {
+    ui.debug("🖱️ UI | \(message, privacy: .public)")
+  }
+
   // MARK: Private
 
   // MARK: - Loggers
@@ -136,4 +181,5 @@ enum Log {
   private static let events = Logger(subsystem: subsystem, category: "events")
   private static let decisions = Logger(subsystem: subsystem, category: "decisions")
   private static let devices = Logger(subsystem: subsystem, category: "devices")
+  private static let ui = Logger(subsystem: subsystem, category: "ui")
 }

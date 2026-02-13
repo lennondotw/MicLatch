@@ -25,7 +25,7 @@ options:
       WS="$dir/WorkspaceSettings.xcsettings"
       plutil -create xml1 "$WS"
       plutil -insert DerivedDataLocationStyle -string WorkspaceRelativePath "$WS"
-      plutil -insert DerivedDataCustomLocation -string .build/DerivedData "$WS"
+      plutil -insert DerivedDataCustomLocation -string build/DerivedData "$WS"
     done
 
 ############################################################
@@ -89,8 +89,8 @@ targets:
       - package: MenuBarExtraAccess
     settings:
       base:
-        MARKETING_VERSION: '0.1.1'
-        CURRENT_PROJECT_VERSION: '3'
+        MARKETING_VERSION: '0.2.0'
+        CURRENT_PROJECT_VERSION: '4'
         INFOPLIST_FILE: MicLatch/Resources/Info.plist
         CODE_SIGN_ENTITLEMENTS: MicLatch/Resources/MicLatch.entitlements
         GENERATE_INFOPLIST_FILE: false

@@ -8,11 +8,11 @@ included:
 
 # Paths to exclude during linting
 excluded:
-  - .build
+  - build
   - DerivedData
   - Pods
   - Carthage
-  - "**/.build"
+  - "**/build"
   - "**/Package.swift"
 
 # Enabled opt-in rules
@@ -223,7 +223,6 @@ attributes:
     - "@IBOutlet"
     - "@IBDesignable"
     - "@IBInspectable"
-    - "@objc"
     - "@GKInspectable"
     - "@Sendable"
   always_on_line_above:
@@ -234,6 +233,8 @@ attributes:
     - "@MainActor"
     - "@Test"
     - "@Suite"
+    - "@objc"
+    - "@ViewBuilder"
 
 modifier_order:
   preferred_modifier_order:
