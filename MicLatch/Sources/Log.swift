@@ -98,14 +98,14 @@ enum Log {
         return "\(info.name)(\(info.transport),\(caps))"
       }
       .joined(separator: ", ")
-    devices.debug("🔌 DEVICES | count=\(list.count) | \(summary, privacy: .public)")
+    devices.notice("🔌 DEVICES | count=\(list.count) | \(summary, privacy: .public)")
   }
 
   /// Log current default devices.
   static func defaultDevices(input: String?, output: String?) {
     let inputStr = input ?? "(none)"
     let outputStr = output ?? "(none)"
-    devices.debug("🎯 DEFAULTS | input=\"\(inputStr, privacy: .public)\" output=\"\(outputStr, privacy: .public)\"")
+    devices.notice("🎯 DEFAULTS | input=\"\(inputStr, privacy: .public)\" output=\"\(outputStr, privacy: .public)\"")
   }
 
   // MARK: - Service Logging
