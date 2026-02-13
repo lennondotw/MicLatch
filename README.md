@@ -18,7 +18,9 @@ MicLatch monitors audio device changes and intelligently restores your preferred
 
 - Detects system-initiated input switches vs. user manual changes
 - Restores your *previous* input device, not a hardcoded one
-- Uses a time-window algorithm (500ms) to distinguish linked switches
+- Uses a time-window algorithm (2s) to distinguish linked switches
+- **Statistics dashboard**: tracks restore count and manual switch count
+- **Last Input Change**: shows the most recent input action with status
 - Lightweight menu bar app with minimal resource usage
 - Built-in auto-update via Sparkle
 
@@ -30,7 +32,7 @@ MicLatch monitors audio device changes and intelligently restores your preferred
 │                           │                                     │
 │                           ▼                                     │
 │              Record current input device                        │
-│              Start 500ms time window                            │
+│              Start 2s time window                               │
 │                           │                                     │
 │                           ▼                                     │
 │  ┌─────────────────────────────────────────────────────────┐   │
@@ -57,6 +59,16 @@ The app will automatically check for updates via Sparkle.
 2. Toggle "Enable Protection" to start monitoring
 3. Connect your Bluetooth headphones as usual
 4. MicLatch automatically restores your preferred microphone
+
+**Menu Bar Dashboard:**
+
+- **Output/Input**: Current audio devices
+- **Linked Input Change Restores**: How many times linked switches were prevented
+- **Manual Input Switches**: User-initiated input changes (outside time window)
+- **Last Input Change**: Most recent input action with status:
+  - Restored → device was successfully restored
+  - Failed → restore attempt failed (device unavailable)
+  - Manual → user manually changed input
 
 ## Development
 

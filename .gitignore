@@ -80,3 +80,6 @@ logs/
 # Cursor IDE
 .cursor/
 *.profraw
+
+# xcode-build-server
+buildServer.json

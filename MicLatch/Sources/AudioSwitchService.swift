@@ -5,6 +5,7 @@
 //  Copyright © 2026 Mingxuan Wang. All rights reserved.
 //
 
+import Combine
 import CoreAudio
 import Foundation
 
@@ -73,6 +74,20 @@ struct RealAudioDeviceProvider: AudioDeviceProviding {
   }
 }
 
+// MARK: - LastInputChange
+
+/// Represents the most recent input device change event.
+enum LastInputChange: Equatable {
+  /// Input was successfully restored after a linked switch.
+  case restored(deviceName: String, timestamp: Date)
+
+  /// Restore attempt failed.
+  case restoreFailed(deviceName: String, timestamp: Date)
+
+  /// Manual input switch (outside time window).
+  case manual(from: String, to: String, timestamp: Date)
+}
+
 // MARK: - AudioSwitchService
 
 /// Service that monitors audio device changes and restores input device
@@ -100,6 +115,14 @@ final class AudioSwitchService: ObservableObject {
   ) {
     self.windowDuration = windowDuration
     self.deviceProvider = deviceProvider
+
+    // Update currentTime every second for UI refresh
+    self.timeUpdateCancellable = Timer.publish(every: 1, on: .main, in: .common)
+      .autoconnect()
+      .sink { [weak self] date in
+        self?.currentTime = date
+      }
+
     if startImmediately {
       start()
     }
@@ -117,6 +140,19 @@ final class AudioSwitchService: ObservableObject {
 
   /// Name of the current output device.
   @Published private(set) var currentOutputName: String?
+
+  /// Count of successful input restores (linked switch prevention).
+  @Published private(set) var inputRestoreCount = 0
+
+  /// Count of manual input switches (outside time window).
+  @Published private(set) var manualInputSwitchCount = 0
+
+  /// The most recent input change event.
+  @Published private(set) var lastInputChange: LastInputChange?
+
+  /// Current time, updated every second for UI refresh.
+  /// Used to force SwiftUI to recalculate relative timestamps.
+  @Published private(set) var currentTime = Date()
 
   // MARK: - Configuration
 
@@ -232,6 +268,9 @@ final class AudioSwitchService: ObservableObject {
   /// Previous device info for removed device logging.
   private var previousDeviceInfos: [AudioDeviceID: Log.DeviceInfo] = [:]
 
+  /// Timer subscription for updating currentTime.
+  private var timeUpdateCancellable: AnyCancellable?
+
   // MARK: - Private Methods
 
   private func setupListeners() {
@@ -340,8 +379,11 @@ final class AudioSwitchService: ObservableObject {
         if deviceProvider.setDefaultInput(previousID) {
           Log.decisionRestore(to: previousName, elapsedMs: elapsedMs)
           currentInputName = previousName
+          inputRestoreCount += 1
+          lastInputChange = .restored(deviceName: previousName, timestamp: Date())
         } else {
           Log.decisionSkip(reason: "failed to restore input to \(previousName)")
+          lastInputChange = .restoreFailed(deviceName: previousName, timestamp: Date())
         }
       } else {
         // Input is already what we want (maybe we just set it)
@@ -351,6 +393,12 @@ final class AudioSwitchService: ObservableObject {
       // Outside window: this is a manual change, update our record
       Log.inputChanged(from: oldInput, to: newInput, transport: transport, isLinked: false)
       previousInputDevice = newInputID
+      manualInputSwitchCount += 1
+      lastInputChange = .manual(
+        from: oldInput ?? "(none)",
+        to: newInput ?? "(none)",
+        timestamp: Date()
+      )
     }
   }
 
