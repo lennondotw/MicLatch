@@ -5,7 +5,7 @@
 //  Copyright © 2026 Mingxuan Wang. All rights reserved.
 //
 
-@testable import MicLatchKit
+@testable import MicLatch
 import Testing
 
 // MARK: - MicLatchTests

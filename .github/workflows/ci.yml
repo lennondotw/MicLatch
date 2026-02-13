@@ -119,9 +119,14 @@ jobs:
             -disableAutomaticPackageResolution \
             build 2>&1 | xcbeautify
 
+      - name: Create zip for artifact
+        run: |
+          cd build/Build/Products/Release
+          zip -r -y MicLatch.zip MicLatch.app
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: MicLatch-${{ github.sha }}
-          path: build/Build/Products/Release/MicLatch.app
+          path: build/Build/Products/Release/MicLatch.zip
           retention-days: 30
