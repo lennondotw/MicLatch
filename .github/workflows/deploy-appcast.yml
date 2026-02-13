@@ -1,0 +1,78 @@
+name: Deploy Appcast
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gh-pages-deploy
+  cancel-in-progress: false
+
+env:
+  SPARKLE_VERSION: "2.8.1"
+
+jobs:
+  deploy:
+    name: Generate & Deploy Appcast
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout gh-pages to /tmp/gh-pages
+        run: |
+          if git fetch origin gh-pages --depth=1 2>/dev/null; then
+            git worktree add -b gh-pages /tmp/gh-pages origin/gh-pages
+          else
+            git worktree add --orphan -b gh-pages /tmp/gh-pages
+          fi
+
+      - name: Download Sparkle tools
+        run: |
+          mkdir -p sparkle-tools
+          curl -sL "https://github.com/sparkle-project/Sparkle/releases/download/${SPARKLE_VERSION}/Sparkle-${SPARKLE_VERSION}.tar.xz" \
+            | tar -xJ -C sparkle-tools --include='./bin/*'
+
+      - name: Download release zip
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p staging
+          gh release download "${{ github.event.release.tag_name }}" \
+            --pattern '*.zip' \
+            --dir staging
+
+      - name: Fetch existing appcast
+        continue-on-error: true
+        run: cp /tmp/gh-pages/appcast.xml staging/ 2>/dev/null || true
+
+      - name: Generate appcast
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: |
+          echo "$SPARKLE_PRIVATE_KEY" > /tmp/sparkle_key
+          ./sparkle-tools/bin/generate_appcast \
+            --ed-key-file /tmp/sparkle_key \
+            --download-url-prefix "https://github.com/${{ github.repository }}/releases/download/${{ github.event.release.tag_name }}/" \
+            staging
+          rm -f /tmp/sparkle_key
+
+      - name: Deploy to gh-pages branch
+        run: |
+          cd /tmp/gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          cp "$GITHUB_WORKSPACE/staging/appcast.xml" .
+          cp "$GITHUB_WORKSPACE/docs/index.html" . 2>/dev/null || true
+
+          echo "Pages content:"
+          ls -la appcast.xml index.html 2>/dev/null || ls -la appcast.xml
+
+          git add -A
+          git diff --cached --quiet && echo "No changes to deploy" && exit 0
+          git commit -m "Update appcast for ${{ github.event.release.tag_name }}"
+          git push origin gh-pages

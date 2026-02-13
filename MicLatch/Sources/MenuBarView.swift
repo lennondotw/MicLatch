@@ -5,6 +5,7 @@
 //  Copyright © 2026 Mingxuan Wang. All rights reserved.
 //
 
+import Sparkle
 import SwiftUI
 
 // MARK: - MenuBarView
@@ -13,6 +14,8 @@ struct MenuBarView: View {
   // MARK: Internal
 
   @ObservedObject var service: AudioSwitchService
+
+  let updater: SPUUpdater
 
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
@@ -101,18 +104,26 @@ struct MenuBarView: View {
   }
 
   private var footerSection: some View {
-    HStack {
-      Text("v\(AppInfo.version)")
-        .font(.caption2)
-        .foregroundStyle(.tertiary)
-
-      Spacer()
-
-      Button("Quit") {
-        NSApplication.shared.terminate(nil)
+    VStack(spacing: 8) {
+      Button("Check for Updates…") {
+        updater.checkForUpdates()
       }
       .buttonStyle(.plain)
       .foregroundStyle(.secondary)
+
+      HStack {
+        Text("v\(AppInfo.version)")
+          .font(.caption2)
+          .foregroundStyle(.tertiary)
+
+        Spacer()
+
+        Button("Quit") {
+          NSApplication.shared.terminate(nil)
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(.secondary)
+      }
     }
     .padding(.horizontal, 12)
     .padding(.vertical, 8)
@@ -144,6 +155,11 @@ struct MenuBarView: View {
 // MARK: - Preview
 
 #Preview {
-  MenuBarView(service: AudioSwitchService())
-    .frame(width: 280, height: 200)
+  let controller = SPUStandardUpdaterController(
+    startingUpdater: false,
+    updaterDelegate: nil,
+    userDriverDelegate: nil
+  )
+  return MenuBarView(service: AudioSwitchService(), updater: controller.updater)
+    .frame(width: 280, height: 250)
 }

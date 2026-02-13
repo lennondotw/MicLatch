@@ -64,6 +64,10 @@ build/
 *.pem
 *.p12
 *.mobileprovision
+Local.xcconfig
+
+# SPM Packages (cached by CI separately)
+SourcePackages/
 
 # Archives
 *.ipa

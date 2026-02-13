@@ -19,6 +19,10 @@ app_build := `grep 'CURRENT_PROJECT_VERSION:' project.yml | sed "s/.*['\"]\\([^'
 # Release configuration (fixed for distribution)
 release_team_id := "NAP6NNQHV6"
 
+# Sparkle version
+sparkle_version := "2.8.1"
+sparkle_account := "miclatch-ed25519"
+
 default:
     @just --list
 
@@ -269,6 +273,34 @@ bump-build:
     sed -i '' "s/CURRENT_PROJECT_VERSION: '.*'/CURRENT_PROJECT_VERSION: '$next'/" project.yml
     echo "Version: {{ app_version }} (build {{ app_build }} → $next)"
     echo "Run 'just generate' to apply."
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Sparkle Tools
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Download Sparkle CLI tools (one-time)
+sparkle-download-tools:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    TOOLS_DIR="build/sparkle-tools"
+    if [[ -d "$TOOLS_DIR/bin" ]]; then
+        echo "Sparkle tools already present at $TOOLS_DIR"
+        exit 0
+    fi
+    echo "Downloading Sparkle {{ sparkle_version }} tools..."
+    mkdir -p "$TOOLS_DIR"
+    curl -sL "https://github.com/sparkle-project/Sparkle/releases/download/{{ sparkle_version }}/Sparkle-{{ sparkle_version }}.tar.xz" \
+        | tar -xJ -C "$TOOLS_DIR" --include='./bin/*'
+    echo "Sparkle tools installed to $TOOLS_DIR/bin/"
+    ls "$TOOLS_DIR/bin/"
+
+# Generate Sparkle EdDSA signing keys (one-time)
+sparkle-generate-keys: sparkle-download-tools
+    build/sparkle-tools/bin/generate_keys --account {{ sparkle_account }}
+
+# Show Sparkle EdDSA public key
+sparkle-show-public-key: sparkle-download-tools
+    build/sparkle-tools/bin/generate_keys -p --account {{ sparkle_account }}
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Utilities

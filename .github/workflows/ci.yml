@@ -1,0 +1,127 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  DEVELOPER_DIR: /Applications/Xcode_26.2.app/Contents/Developer
+
+jobs:
+  lint:
+    name: SwiftLint
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install SwiftLint
+        run: brew install swiftlint
+      - name: Lint
+        run: swiftlint --strict --config .swiftlint.yml
+
+  format-check:
+    name: SwiftFormat
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install SwiftFormat
+        run: brew install swiftformat
+      - name: Check formatting
+        run: swiftformat --lint MicLatch MicLatchTests --config .swiftformat
+
+  build-and-test:
+    name: Build & Test
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Swift Package Manager
+        uses: actions/cache@v4
+        with:
+          path: SourcePackages
+          key: ${{ runner.os }}-spm-${{ hashFiles('project.yml') }}
+
+      - name: Install dependencies
+        run: brew install xcodegen xcbeautify
+
+      - name: Create Local.xcconfig for CI
+        run: cp CI.xcconfig Local.xcconfig
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Resolve package dependencies
+        run: |
+          xcodebuild -project MicLatch.xcodeproj \
+            -scheme MicLatch \
+            -resolvePackageDependencies \
+            -clonedSourcePackagesDirPath SourcePackages
+
+      - name: Build (Debug)
+        run: |
+          xcodebuild -project MicLatch.xcodeproj \
+            -scheme MicLatch \
+            -configuration Debug \
+            -destination 'platform=macOS' \
+            -clonedSourcePackagesDirPath SourcePackages \
+            -disableAutomaticPackageResolution \
+            build 2>&1 | xcbeautify
+
+      - name: Test
+        run: |
+          xcodebuild -project MicLatch.xcodeproj \
+            -scheme MicLatch \
+            -configuration Debug \
+            -destination 'platform=macOS' \
+            -clonedSourcePackagesDirPath SourcePackages \
+            -disableAutomaticPackageResolution \
+            test 2>&1 | xcbeautify
+
+  release-build:
+    name: Release Build
+    runs-on: macos-26
+    needs: [build-and-test]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Swift Package Manager
+        uses: actions/cache@v4
+        with:
+          path: SourcePackages
+          key: ${{ runner.os }}-spm-${{ hashFiles('project.yml') }}
+
+      - name: Install dependencies
+        run: brew install xcodegen xcbeautify
+
+      - name: Create Local.xcconfig for CI
+        run: cp CI.xcconfig Local.xcconfig
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Resolve package dependencies
+        run: |
+          xcodebuild -project MicLatch.xcodeproj \
+            -scheme MicLatch \
+            -resolvePackageDependencies \
+            -clonedSourcePackagesDirPath SourcePackages
+
+      - name: Build (Release)
+        run: |
+          xcodebuild -project MicLatch.xcodeproj \
+            -scheme MicLatch \
+            -configuration Release \
+            -destination 'platform=macOS' \
+            -derivedDataPath build \
+            -clonedSourcePackagesDirPath SourcePackages \
+            -disableAutomaticPackageResolution \
+            build 2>&1 | xcbeautify
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MicLatch-${{ github.sha }}
+          path: build/Build/Products/Release/MicLatch.app
+          retention-days: 30

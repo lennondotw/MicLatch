@@ -1,0 +1,7 @@
+// CI configuration
+// Used by GitHub Actions to provide signing identity
+
+// Code signing disabled for CI builds
+CODE_SIGN_IDENTITY =
+CODE_SIGNING_REQUIRED = NO
+CODE_SIGN_ENTITLEMENTS =

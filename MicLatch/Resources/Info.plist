@@ -32,5 +32,9 @@
     <string>public.app-category.utilities</string>
     <key>LSUIElement</key>
     <true/>
+    <key>SUFeedURL</key>
+    <string>https://lennondotw.github.io/MicLatch/appcast.xml</string>
+    <key>SUPublicEDKey</key>
+    <string>$(SPARKLE_PUBLIC_KEY)</string>
 </dict>
 </plist>

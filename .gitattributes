@@ -1,0 +1,39 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+# Source files
+*.swift text diff=swift
+*.h text
+*.m text
+*.mm text
+*.c text
+*.cpp text
+# Config files
+*.yml text
+*.yaml text
+*.json text
+*.plist text
+*.xcconfig text
+*.entitlements text
+# Documentation
+*.md text diff=markdown
+*.txt text
+# Scripts
+*.sh text eol=lf
+Justfile text eol=lf
+# Git
+.gitattributes text
+.gitignore text
+# Binary files (Git LFS)
+*.png filter=lfs diff=lfs merge=lfs -text
+*.jpg filter=lfs diff=lfs merge=lfs -text
+*.jpeg filter=lfs diff=lfs merge=lfs -text
+*.gif filter=lfs diff=lfs merge=lfs -text
+*.ico filter=lfs diff=lfs merge=lfs -text
+*.icns filter=lfs diff=lfs merge=lfs -text
+*.pdf filter=lfs diff=lfs merge=lfs -text
+*.zip filter=lfs diff=lfs merge=lfs -text
+*.dmg filter=lfs diff=lfs merge=lfs -text
+*.app filter=lfs diff=lfs merge=lfs -text
+*.car filter=lfs diff=lfs merge=lfs -text
+# Xcode specific
+*.pbxproj merge=union
