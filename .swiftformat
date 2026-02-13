@@ -1,0 +1,101 @@
+# SwiftFormat Configuration
+# https://github.com/nicklockwood/SwiftFormat/blob/main/Rules.md
+
+# Swift version
+--swiftversion 6.0
+
+# File options
+--exclude .build,DerivedData,Pods,Carthage,**/.build
+
+# Format options
+--indent 4
+--tabwidth 4
+--maxwidth 120
+--wraparguments before-first
+--wrapparameters before-first
+--wrapcollections before-first
+--wrapconditions after-first
+--wrapreturntype if-multiline
+--wrapeffects if-multiline
+--funcattributes prev-line
+--typeattributes prev-line
+--varattributes prev-line
+--storedvarattrs same-line
+--computedvarattrs prev-line
+--complexattrs prev-line
+--typeblanklines remove
+--structthreshold 20
+--enumthreshold 20
+--classthreshold 20
+--extensionlength 0
+--organizetypes class,struct,enum,extension,protocol
+--extensionacl on-declarations
+
+# Self options
+--self init-only
+--selfrequired
+
+# Import options
+--importgrouping alpha
+
+# Trailing comma
+--commas always
+
+# Semicolons
+--semicolons never
+
+# Void
+--voidtype void
+
+# Operator spacing
+--operatorfunc spaced
+--ranges spaced
+
+# Number formatting
+--decimalgrouping 3
+--hexgrouping 4
+--binarygrouping 4
+--octalgrouping 4
+--hexliteralcase lowercase
+--exponentcase lowercase
+--fractiongrouping enabled
+--exponentgrouping enabled
+
+# Blank lines
+--emptybraces no-space
+--guardelse auto
+--elseposition same-line
+--linebreaks lf
+--trimwhitespace always
+--maxwidth 120
+
+# Header
+--header "//\n//  {file}\n//  MicLatch\n//\n//  Created by Developer on {created}.\n//"
+
+# Redundant options
+--redundanttype infer-locals-only
+
+# Enabled rules (default + custom)
+--enable blankLinesBetweenImports
+--enable blankLinesBetweenChainedFunctions
+--enable blockComments
+--enable docComments
+--enable isEmpty
+--enable markTypes
+--enable organizeDeclarations
+--enable sortSwitchCases
+--enable wrapConditionalBodies
+--enable wrapEnumCases
+--enable wrapMultilineConditionalAssignment
+--enable wrapSwitchCases
+
+# Disabled rules
+--disable acronyms
+--disable unusedArguments
+
+# Mark types configuration
+--marktypes always
+--typemark "MARK: - %t"
+--markextensions always
+--extensionmark "MARK: - %t + %c"
+--groupedextension "MARK: %c"

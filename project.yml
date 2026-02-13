@@ -1,0 +1,179 @@
+# XcodeGen Project Specification
+# https://github.com/yonaskolb/XcodeGen/blob/master/Docs/ProjectSpec.md
+
+name: MicLatch
+
+############################################################
+# Options
+############################################################
+
+options:
+  bundleIdPrefix: com.reeky
+  deploymentTarget:
+    iOS: "18.0"
+    macOS: "15.0"
+  xcodeVersion: "26.2"
+  generateEmptyDirectories: true
+  groupSortPosition: top
+  createIntermediateGroups: true
+  indentWidth: 4
+  tabWidth: 4
+  usesTabs: false
+
+############################################################
+# Settings
+############################################################
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    ENABLE_USER_SCRIPT_SANDBOXING: false
+    # Swift 6 strict concurrency
+    SWIFT_STRICT_CONCURRENCY: complete
+    # Enable upcoming Swift features
+    SWIFT_UPCOMING_FEATURE_EXISTENTIAL_ANY: true
+    SWIFT_UPCOMING_FEATURE_INTERNAL_IMPORTS_BY_DEFAULT: true
+  configs:
+    Debug:
+      SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG
+      SWIFT_OPTIMIZATION_LEVEL: -Onone
+      ENABLE_TESTABILITY: true
+    Release:
+      SWIFT_ACTIVE_COMPILATION_CONDITIONS: ""
+      SWIFT_OPTIMIZATION_LEVEL: -O
+      ENABLE_TESTABILITY: false
+
+############################################################
+# Configs
+############################################################
+
+configs:
+  Debug: debug
+  Release: release
+
+############################################################
+# Packages
+############################################################
+
+packages:
+  MicLatchKit:
+    path: .
+
+############################################################
+# Targets
+############################################################
+
+targets:
+
+  # ──────────────────────────────────────────────────────────
+  # MicLatch (macOS App)
+  # ──────────────────────────────────────────────────────────
+
+  MicLatch:
+    type: application
+    platform: macOS
+    sources:
+      - path: Sources/MicLatch
+        excludes:
+          - "**/.DS_Store"
+    dependencies:
+      - package: MicLatchKit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.reeky.MicLatch
+        MARKETING_VERSION: "1.0.0"
+        CURRENT_PROJECT_VERSION: "1"
+        INFOPLIST_FILE: Sources/MicLatch/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Sources/MicLatch/MicLatch.entitlements
+        GENERATE_INFOPLIST_FILE: false
+        MACOSX_DEPLOYMENT_TARGET: "15.0"
+        ENABLE_HARDENED_RUNTIME: true
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: ""
+    preBuildScripts:
+      - name: "SwiftLint"
+        basedOnDependencyAnalysis: false
+        shell: /bin/zsh
+        script: |
+          if command -v swiftlint >/dev/null 2>&1; then
+            swiftlint lint --config "${SRCROOT}/.swiftlint.yml" --quiet
+          else
+            echo "warning: SwiftLint not installed, run 'brew install swiftlint'"
+          fi
+      - name: "SwiftFormat"
+        basedOnDependencyAnalysis: false
+        shell: /bin/zsh
+        script: |
+          if command -v swiftformat >/dev/null 2>&1; then
+            swiftformat "${SRCROOT}/Sources" --lint --config "${SRCROOT}/.swiftformat" --quiet
+          else
+            echo "warning: SwiftFormat not installed, run 'brew install swiftformat'"
+          fi
+
+  # ──────────────────────────────────────────────────────────
+  # MicLatchTests (macOS Unit Tests)
+  # ──────────────────────────────────────────────────────────
+
+  MicLatchTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: Tests/MicLatchTests
+        excludes:
+          - "**/.DS_Store"
+    dependencies:
+      - target: MicLatch
+      - package: MicLatchKit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.reeky.MicLatchTests
+        INFOPLIST_FILE: Tests/MicLatchTests/Info.plist
+        GENERATE_INFOPLIST_FILE: true
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/MicLatch.app/Contents/MacOS/MicLatch"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+
+  # ──────────────────────────────────────────────────────────
+  # MicLatchKitTests (Swift Package Tests)
+  # ──────────────────────────────────────────────────────────
+
+  MicLatchKitTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: Tests/MicLatchKitTests
+        excludes:
+          - "**/.DS_Store"
+    dependencies:
+      - package: MicLatchKit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.reeky.MicLatchKitTests
+        GENERATE_INFOPLIST_FILE: true
+
+############################################################
+# Schemes
+############################################################
+
+schemes:
+  MicLatch:
+    build:
+      targets:
+        MicLatch: all
+        MicLatchTests: [test]
+        MicLatchKitTests: [test]
+    run:
+      config: Debug
+      commandLineArguments:
+        "-com.apple.CoreData.SQLDebug": false
+    test:
+      config: Debug
+      gatherCoverageData: true
+      targets:
+        - MicLatchTests
+        - MicLatchKitTests
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release
