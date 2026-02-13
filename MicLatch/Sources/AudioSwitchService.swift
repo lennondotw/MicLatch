@@ -121,13 +121,6 @@ final class AudioSwitchService: ObservableObject {
     self.windowDuration = windowDuration
     self.deviceProvider = deviceProvider
 
-    // Update currentTime every second for UI refresh
-    self.timeUpdateCancellable = Timer.publish(every: 1, on: .main, in: .common)
-      .autoconnect()
-      .sink { [weak self] date in
-        self?.currentTime = date
-      }
-
     if startImmediately {
       start()
     }
@@ -154,10 +147,6 @@ final class AudioSwitchService: ObservableObject {
 
   /// The most recent input change event.
   @Published private(set) var lastInputChange: LastInputChange?
-
-  /// Current time, updated every second for UI refresh.
-  /// Used to force SwiftUI to recalculate relative timestamps.
-  @Published private(set) var currentTime = Date()
 
   // MARK: - Configuration
 
@@ -272,9 +261,6 @@ final class AudioSwitchService: ObservableObject {
 
   /// Previous device info for removed device logging.
   private var previousDeviceInfos: [AudioDeviceID: Log.DeviceInfo] = [:]
-
-  /// Timer subscription for updating currentTime.
-  private var timeUpdateCancellable: AnyCancellable?
 
   // MARK: - Private Methods
 

@@ -30,7 +30,7 @@ struct MenuBarView: View {
     // - Last Change: Most recent input change event with status (Restored/Failed/Non-Linked)
     Text("Linked Restores: \(service.inputRestoreCount)")
     Text("Unlinked Switches: \(service.nonLinkedInputSwitchCount)")
-    Text("Last Change: \(formatLastInputChange(service.lastInputChange, at: service.currentTime))")
+    Text("Last Change: \(formatLastInputChange(service.lastInputChange))")
 
     Divider()
 
@@ -61,30 +61,28 @@ struct MenuBarView: View {
 
   // MARK: Private
 
-  private func formatLastInputChange(_ change: LastInputChange?, at now: Date) -> String {
+  /// Formatter for displaying event timestamps.
+  /// Uses short time format (e.g., "14:32") to show when an event occurred.
+  private static let timeFormatter: DateFormatter = {
+    let formatter = DateFormatter()
+    formatter.timeStyle = .short
+    formatter.dateStyle = .none
+    return formatter
+  }()
+
+  private func formatLastInputChange(_ change: LastInputChange?) -> String {
     guard let change else {
       return "None"
     }
     switch change {
     case let .restored(deviceName, timestamp):
-      return "Restored → \(deviceName) (\(relativeTime(from: timestamp, to: now)))"
+      return "Restored → \(deviceName) (at \(Self.timeFormatter.string(from: timestamp)))"
 
     case let .restoreFailed(deviceName, timestamp):
-      return "Failed → \(deviceName) (\(relativeTime(from: timestamp, to: now)))"
+      return "Failed → \(deviceName) (at \(Self.timeFormatter.string(from: timestamp)))"
 
     case let .nonLinked(_, to, timestamp):
-      return "Non-Linked → \(to) (\(relativeTime(from: timestamp, to: now)))"
-    }
-  }
-
-  private func relativeTime(from date: Date, to now: Date) -> String {
-    let seconds = Int(now.timeIntervalSince(date))
-    if seconds < 60 {
-      return "\(seconds)s ago"
-    } else if seconds < 3600 {
-      return "\(seconds / 60)m ago"
-    } else {
-      return "\(seconds / 3600)h ago"
+      return "Non-Linked → \(to) (at \(Self.timeFormatter.string(from: timestamp)))"
     }
   }
 }

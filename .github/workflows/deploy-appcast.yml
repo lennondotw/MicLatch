@@ -45,9 +45,48 @@ jobs:
             --pattern '*.zip' \
             --dir staging
 
+      - name: Extract and validate build number
+        run: |
+          ZIP_FILE=$(ls staging/*.zip | head -1)
+          echo "Extracting $ZIP_FILE..."
+          unzip -q "$ZIP_FILE" -d staging/extracted
+
+          # Get build number from the new release
+          NEW_BUILD=$(plutil -extract CFBundleVersion raw staging/extracted/MicLatch.app/Contents/Info.plist)
+          NEW_VERSION=$(plutil -extract CFBundleShortVersionString raw staging/extracted/MicLatch.app/Contents/Info.plist)
+          echo "New release: version=$NEW_VERSION, build=$NEW_BUILD"
+          echo "NEW_BUILD=$NEW_BUILD" >> $GITHUB_ENV
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+
+          rm -rf staging/extracted
+
       - name: Fetch existing appcast
         continue-on-error: true
         run: cp /tmp/gh-pages/appcast.xml staging/ 2>/dev/null || true
+
+      - name: Check for duplicate build number
+        run: |
+          if [[ -f staging/appcast.xml ]]; then
+            # Extract all existing build numbers from appcast (macOS compatible)
+            EXISTING_BUILDS=$(sed -n 's/.*<sparkle:version>\([^<]*\)<.*/\1/p' staging/appcast.xml || true)
+            echo "Existing builds in appcast: $EXISTING_BUILDS"
+
+            for build in $EXISTING_BUILDS; do
+              if [[ "$build" == "$NEW_BUILD" ]]; then
+                echo "::error::Build number $NEW_BUILD already exists in appcast.xml!"
+                echo "::error::This would overwrite an existing release. Please bump the build number."
+                echo ""
+                echo "To fix this:"
+                echo "  1. Run 'just bump-build' to increment the build number"
+                echo "  2. Run 'just release' to create a new build"
+                echo "  3. Delete the GitHub release and re-upload"
+                exit 1
+              fi
+            done
+            echo "Build number $NEW_BUILD is unique. Proceeding..."
+          else
+            echo "No existing appcast.xml found. This is the first release."
+          fi
 
       - name: Generate appcast
         env:

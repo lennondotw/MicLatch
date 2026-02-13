@@ -52,10 +52,15 @@ build/sparkle-tools/bin/generate_keys -x build/sparkle_private_key --account mic
 
 ## Release Steps
 
+> [!IMPORTANT]
+> **Always bump both version AND build number!** Sparkle uses `CFBundleVersion` (build number)
+> as the unique identifier. If you forget to bump the build number, the CI will fail with
+> "Build number already exists in appcast.xml" error.
+
 ```bash
-# 1. Bump version and build number
+# 1. Bump version and build number (BOTH are required!)
 just bump-version patch    # or: major | minor | 1.2.3
-just bump-build
+just bump-build            # ⚠️ DO NOT SKIP THIS!
 
 # 2. Regenerate Xcode project
 just generate

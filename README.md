@@ -20,8 +20,8 @@ MicLatch monitors audio device changes and intelligently restores your preferred
 - Detects system-initiated linked switches vs. non-linked changes
 - Restores your *previous* input device, not a hardcoded one
 - Uses a time-window algorithm (2s) to distinguish linked switches
-- **Statistics dashboard**: tracks restore count and non-linked switch count
-- **Last Input Change**: shows the most recent input action with status
+- **Statistics dashboard**: tracks linked restores and unlinked switch count
+- **Last Change**: shows the most recent input action with status
 - Lightweight menu bar app with minimal resource usage
 - Built-in auto-update via Sparkle
 
@@ -66,9 +66,9 @@ The app will automatically check for updates via Sparkle.
 **Menu Bar Dashboard:**
 
 - **Output/Input**: Current audio devices
-- **Linked Input Change Restores**: How many times linked switches were prevented
-- **Non-Linked Input Switches**: Input changes outside time window or non-Bluetooth devices
-- **Last Input Change**: Most recent input action with status:
+- **Linked Restores**: Input device auto-restored after Bluetooth output switch within time window
+- **Unlinked Switches**: Input changes outside time window or from non-Bluetooth devices
+- **Last Change**: Most recent input change event with status:
   - Restored → device was successfully restored
   - Failed → restore attempt failed (device unavailable)
   - Non-Linked → input changed outside protection scope

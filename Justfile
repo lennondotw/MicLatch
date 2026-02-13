@@ -246,7 +246,25 @@ beta-zip: beta
 version:
     @echo "{{ app_version }} (build {{ app_build }})"
 
-# Bump version: just bump-version major | minor | patch | 1.2.3
+# Bump version and build: just bump major | minor | patch
+bump part:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    current="{{ app_version }}"
+    IFS='.' read -r major minor patch <<< "$current"
+    case "{{ part }}" in
+        major) new="$((major + 1)).0.0" ;;
+        minor) new="${major}.$((minor + 1)).0" ;;
+        patch) new="${major}.${minor}.$((patch + 1))" ;;
+        *)     echo "Usage: just bump major | minor | patch"; exit 1 ;;
+    esac
+    next_build=$(({{ app_build }} + 1))
+    sed -i '' "s/MARKETING_VERSION: '.*'/MARKETING_VERSION: '$new'/" project.yml
+    sed -i '' "s/CURRENT_PROJECT_VERSION: '.*'/CURRENT_PROJECT_VERSION: '$next_build'/" project.yml
+    echo "Version: $current → $new (build {{ app_build }} → $next_build)"
+    echo "Run 'just generate' to apply."
+
+# Bump version only: just bump-version major | minor | patch | 1.2.3
 bump-version part:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -262,7 +280,7 @@ bump-version part:
     echo "Version: $current → $new (build {{ app_build }})"
     echo "Run 'just generate' to apply."
 
-# Increment build number
+# Increment build number only
 bump-build:
     #!/usr/bin/env bash
     set -euo pipefail
