@@ -89,8 +89,8 @@ targets:
       - package: MenuBarExtraAccess
     settings:
       base:
-        MARKETING_VERSION: '0.4.8'
-        CURRENT_PROJECT_VERSION: '12'
+        MARKETING_VERSION: '0.4.9'
+        CURRENT_PROJECT_VERSION: '13'
         INFOPLIST_FILE: MicLatch/Resources/Info.plist
         CODE_SIGN_ENTITLEMENTS: MicLatch/Resources/MicLatch.entitlements
         GENERATE_INFOPLIST_FILE: false
