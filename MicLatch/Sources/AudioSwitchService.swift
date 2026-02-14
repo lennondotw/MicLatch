@@ -127,8 +127,8 @@ final class AudioSwitchService: ObservableObject {
   // MARK: - Initialization
 
   init(
-    windowDuration: TimeInterval = 0.5,
-    lookbackDuration: TimeInterval = 1.5,
+    windowDuration: TimeInterval = 1.5,
+    lookbackDuration: TimeInterval = 0.5,
     startImmediately: Bool = true,
     deviceProvider: any AudioDeviceProviding = RealAudioDeviceProvider()
   ) {
