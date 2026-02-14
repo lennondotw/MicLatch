@@ -625,70 +625,75 @@ final class AudioSwitchService: ObservableObject {
   private func handleDeviceListChanged() {
     let allIDs = deviceProvider.allDeviceIDs()
     let currentIDSet = Set(allIDs)
+    let deviceInfoMap = buildDeviceInfoMap(from: allIDs)
 
-    // Build device info map
-    var deviceInfoMap: [AudioDeviceID: Log.DeviceInfo] = [:]
-    for id in allIDs {
-      guard let name = deviceProvider.name(of: id) else {
-        continue
-      }
-      deviceInfoMap[id] = Log.DeviceInfo(
+    // Detect added and removed devices
+    let addedIDs = currentIDSet.subtracting(previousDeviceIDs)
+    let removedIDs = previousDeviceIDs.subtracting(currentIDSet)
+    let addedDevices = addedIDs.compactMap { deviceInfoMap[$0] }
+    let removedDevices = removedIDs.compactMap { previousDeviceInfos[$0] }
+
+    // Skip logging if no actual device changes
+    guard !addedDevices.isEmpty || !removedDevices.isEmpty else {
+      previousDeviceIDs = currentIDSet
+      previousDeviceInfos = deviceInfoMap
+      return
+    }
+
+    logDeviceListChanges(deviceInfoMap: deviceInfoMap, added: addedDevices, removed: removedDevices)
+    recordDeviceChangeEvents(added: addedDevices, removed: removedDevices)
+
+    previousDeviceIDs = currentIDSet
+    previousDeviceInfos = deviceInfoMap
+  }
+
+  private func buildDeviceInfoMap(from deviceIDs: [AudioDeviceID]) -> [AudioDeviceID: Log.DeviceInfo] {
+    var map: [AudioDeviceID: Log.DeviceInfo] = [:]
+    for id in deviceIDs {
+      guard let name = deviceProvider.name(of: id) else { continue }
+      map[id] = Log.DeviceInfo(
         name: name,
         transport: deviceProvider.transportTypeName(of: id),
         hasInput: deviceProvider.hasInput(id),
         hasOutput: deviceProvider.hasOutput(id)
       )
     }
+    return map
+  }
 
-    // Detect added and removed devices
-    let addedIDs = currentIDSet.subtracting(previousDeviceIDs)
-    let removedIDs = previousDeviceIDs.subtracting(currentIDSet)
-
-    let addedDevices = addedIDs.compactMap { deviceInfoMap[$0] }
-    let removedDevices = removedIDs.compactMap { previousDeviceInfos[$0] }
-
-    // Skip logging if no actual device changes
-    guard !addedDevices.isEmpty || !removedDevices.isEmpty else {
-      // Still update state for next comparison
-      previousDeviceIDs = currentIDSet
-      previousDeviceInfos = deviceInfoMap
-      return
-    }
-
-    // Build separate input and output lists
+  private func logDeviceListChanges(
+    deviceInfoMap: [AudioDeviceID: Log.DeviceInfo],
+    added: [Log.DeviceInfo],
+    removed: [Log.DeviceInfo]
+  ) {
     let inputDevices = deviceInfoMap.values.filter(\.hasInput)
     let outputDevices = deviceInfoMap.values.filter(\.hasOutput)
-
-    // Log the changes
     Log.deviceListChanged(
       inputs: Array(inputDevices),
       outputs: Array(outputDevices),
-      added: addedDevices,
-      removed: removedDevices,
+      added: added,
+      removed: removed,
       defaultInput: currentInputName,
       defaultOutput: currentOutputName
     )
+  }
 
-    // Record events and send notifications for device changes
-    for device in removedDevices where device.hasInput {
+  private func recordDeviceChangeEvents(added: [Log.DeviceInfo], removed: [Log.DeviceInfo]) {
+    for device in removed where device.hasInput {
       addEvent(.inputDeviceRemoved(deviceName: device.name))
       NotificationService.shared.notifyInputDeviceRemoved(deviceName: device.name)
     }
-    for device in removedDevices where device.hasOutput {
+    for device in removed where device.hasOutput {
       addEvent(.outputDeviceRemoved(deviceName: device.name))
       NotificationService.shared.notifyOutputDeviceRemoved(deviceName: device.name)
     }
-    for device in addedDevices where device.hasInput {
+    for device in added where device.hasInput {
       addEvent(.inputDeviceConnected(deviceName: device.name))
       NotificationService.shared.notifyInputDeviceConnected(deviceName: device.name)
     }
-    for device in addedDevices where device.hasOutput {
+    for device in added where device.hasOutput {
       addEvent(.outputDeviceConnected(deviceName: device.name))
       NotificationService.shared.notifyOutputDeviceConnected(deviceName: device.name)
     }
-
-    // Update previous state for next comparison
-    previousDeviceIDs = currentIDSet
-    previousDeviceInfos = deviceInfoMap
   }
 }

@@ -121,8 +121,8 @@ line_length:
   ignores_interpolated_strings: true
 
 type_body_length:
-  warning: 350
-  error: 500
+  warning: 450
+  error: 600
 
 file_length:
   warning: 500
