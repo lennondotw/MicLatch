@@ -650,7 +650,9 @@ final class AudioSwitchService: ObservableObject {
   private func buildDeviceInfoMap(from deviceIDs: [AudioDeviceID]) -> [AudioDeviceID: Log.DeviceInfo] {
     var map: [AudioDeviceID: Log.DeviceInfo] = [:]
     for id in deviceIDs {
-      guard let name = deviceProvider.name(of: id) else { continue }
+      guard let name = deviceProvider.name(of: id) else {
+        continue
+      }
       map[id] = Log.DeviceInfo(
         name: name,
         transport: deviceProvider.transportTypeName(of: id),
