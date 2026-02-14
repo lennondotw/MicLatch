@@ -352,4 +352,192 @@ struct DecisionLogicTests {
 
     service.stop()
   }
+
+  // MARK: - Max Restores Per Window Tests
+
+  @MainActor
+  @Test("Window closes after max restores reached")
+  func windowClosesAfterMaxRestores() {
+    let mock = MockAudioDeviceProvider()
+    let service = AudioSwitchService(
+      windowDuration: 2.0,
+      startImmediately: false,
+      deviceProvider: mock
+    )
+    service.start()
+
+    // Simulate output change to AirPods
+    mock.currentOutputID = MockAudioDeviceProvider.airPodsSpeaker
+    service.simulateOutputChanged()
+    #expect(service.isWindowOpen == true)
+
+    // Simulate 3 consecutive linked input changes (system keeps trying to switch)
+    for i in 1 ... 3 {
+      mock.currentInputID = MockAudioDeviceProvider.airPodsMic
+      service.simulateInputChanged()
+
+      // After each restore, mock updates to reflect the restored state
+      // but we need to verify the restore was called
+      #expect(mock.setInputCalled == true)
+      mock.setInputCalled = false // Reset for next iteration
+
+      if i < 3 {
+        #expect(service.isWindowOpen == true, "Window should remain open after restore \(i)")
+      } else {
+        #expect(service.isWindowOpen == false, "Window should close after max restores")
+      }
+    }
+
+    // Verify total restore count
+    #expect(service.inputRestoreCount == 3)
+
+    service.stop()
+  }
+
+  @MainActor
+  @Test("Consecutive BT output changes reset window restore count")
+  func consecutiveOutputChangesResetRestoreCount() {
+    let mock = MockAudioDeviceProvider()
+    let service = AudioSwitchService(
+      windowDuration: 2.0,
+      startImmediately: false,
+      deviceProvider: mock
+    )
+    service.start()
+
+    // First output change
+    mock.currentOutputID = MockAudioDeviceProvider.airPodsSpeaker
+    service.simulateOutputChanged()
+
+    // Restore twice
+    for _ in 1 ... 2 {
+      mock.currentInputID = MockAudioDeviceProvider.airPodsMic
+      service.simulateInputChanged()
+      mock.setInputCalled = false
+    }
+    #expect(service.isWindowOpen == true, "Window should still be open after 2 restores")
+
+    // New output change should reset the counter
+    mock.currentOutputID = MockAudioDeviceProvider.builtInSpeaker
+    service.simulateOutputChanged()
+    mock.currentOutputID = MockAudioDeviceProvider.airPodsSpeaker
+    service.simulateOutputChanged()
+
+    // Now we should be able to restore 3 more times
+    for i in 1 ... 3 {
+      mock.currentInputID = MockAudioDeviceProvider.airPodsMic
+      service.simulateInputChanged()
+      mock.setInputCalled = false
+
+      if i < 3 {
+        #expect(service.isWindowOpen == true)
+      } else {
+        #expect(service.isWindowOpen == false)
+      }
+    }
+
+    service.stop()
+  }
+
+  // MARK: - Lookback Tests
+
+  @MainActor
+  @Test("Lookback detects input change before output change")
+  func lookbackDetectsInputBeforeOutput() {
+    let mock = MockAudioDeviceProvider()
+    let service = AudioSwitchService(
+      windowDuration: 0.5,
+      lookbackDuration: 1.5,
+      startImmediately: false,
+      deviceProvider: mock
+    )
+    service.start()
+
+    // Simulate: input changes BEFORE output (race condition scenario)
+    // This simulates when system's linked switch completes before we receive output notification
+    mock.currentInputID = MockAudioDeviceProvider.airPodsMic
+    service.simulateInputChanged()
+
+    // At this point, it's recorded as unlinked (window not open yet)
+    #expect(service.nonLinkedInputSwitchCount == 1)
+    #expect(mock.setInputCalled == false) // No restore yet
+
+    // Now output change arrives (within lookback window)
+    mock.currentOutputID = MockAudioDeviceProvider.airPodsSpeaker
+    service.simulateOutputChanged()
+
+    // Lookback should have detected the recent input change and restored
+    #expect(mock.setInputCalled == true)
+    #expect(mock.lastSetInputID == MockAudioDeviceProvider.builtInMic)
+    #expect(service.inputRestoreCount == 1)
+    // Non-linked count should be decremented since it was reclassified
+    #expect(service.nonLinkedInputSwitchCount == 0)
+
+    service.stop()
+  }
+
+  @MainActor
+  @Test("Lookback ignores input change outside lookback window")
+  func lookbackIgnoresOldInputChange() async {
+    let mock = MockAudioDeviceProvider()
+    let service = AudioSwitchService(
+      windowDuration: 0.5,
+      lookbackDuration: 0.1, // Very short lookback for testing
+      startImmediately: false,
+      deviceProvider: mock
+    )
+    service.start()
+
+    // Simulate input change
+    mock.currentInputID = MockAudioDeviceProvider.airPodsMic
+    service.simulateInputChanged()
+    #expect(service.nonLinkedInputSwitchCount == 1)
+
+    // Wait for lookback window to expire
+    try? await Task.sleep(for: .milliseconds(150))
+
+    // Now output change arrives (outside lookback window)
+    mock.currentOutputID = MockAudioDeviceProvider.airPodsSpeaker
+    service.simulateOutputChanged()
+
+    // Should NOT trigger lookback restore
+    #expect(mock.setInputCalled == false)
+    // Non-linked count should remain unchanged
+    #expect(service.nonLinkedInputSwitchCount == 1)
+    // Window should be open for future input changes
+    #expect(service.isWindowOpen == true)
+
+    service.stop()
+  }
+
+  @MainActor
+  @Test("Lookback only triggers for Bluetooth input changes")
+  func lookbackOnlyForBluetoothInput() {
+    let mock = MockAudioDeviceProvider()
+    let service = AudioSwitchService(
+      windowDuration: 0.5,
+      lookbackDuration: 1.5,
+      startImmediately: false,
+      deviceProvider: mock
+    )
+    service.start()
+
+    // Start with AirPods as current input
+    mock.currentInputID = MockAudioDeviceProvider.airPodsMic
+    service.simulateInputChanged()
+    mock.setInputCalled = false
+
+    // Non-Bluetooth input change
+    mock.currentInputID = MockAudioDeviceProvider.builtInMic
+    service.simulateInputChanged()
+
+    // Output changes to AirPods
+    mock.currentOutputID = MockAudioDeviceProvider.airPodsSpeaker
+    service.simulateOutputChanged()
+
+    // Should NOT trigger lookback restore (non-BT input change)
+    #expect(mock.setInputCalled == false)
+
+    service.stop()
+  }
 }

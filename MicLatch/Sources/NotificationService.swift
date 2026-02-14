@@ -123,6 +123,20 @@ final class NotificationService {
     )
   }
 
+  /// Notify that a previous input change was reclassified as linked via lookback.
+  func notifyInputReclassifiedAsLinked(from oldDevice: String?, to newDevice: String) {
+    guard settings.defaultInputChanged else {
+      return
+    }
+    let body =
+      if let oldDevice {
+        "Previous change to \"\(newDevice)\" (was \"\(oldDevice)\") identified as linked"
+      } else {
+        "Previous change to \"\(newDevice)\" identified as linked"
+      }
+    send(title: "Input Reclassified (Linked)", body: body)
+  }
+
   /// Notify that the default input device changed.
   func notifyDefaultInputChanged(
     from oldDevice: String?,

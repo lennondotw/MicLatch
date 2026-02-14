@@ -88,6 +88,19 @@ enum Log {
     decisions.notice("🔄 NO_CHANGE | Input already \"\(currentDevice, privacy: .public)\"")
   }
 
+  /// Log that a previous input change was reclassified as linked via lookback.
+  static func decisionReclassified(
+    from oldDevice: String?,
+    to newDevice: String,
+    elapsedMs: Int
+  ) {
+    let fromStr = oldDevice ?? "(none)"
+    decisions
+      .notice(
+        "🔍 LOOKBACK | Reclassified: \"\(fromStr, privacy: .public)\" → \"\(newDevice, privacy: .public)\" as linked | elapsed: -\(elapsedMs)ms"
+      )
+  }
+
   /// Log device list change with separated input/output summaries.
   static func deviceListChanged(
     inputs: [DeviceInfo],
@@ -144,6 +157,34 @@ enum Log {
     let inputStr = input ?? "(none)"
     let outputStr = output ?? "(none)"
     devices.notice("🎯 DEFAULTS | input=\"\(inputStr, privacy: .public)\" output=\"\(outputStr, privacy: .public)\"")
+  }
+
+  /// Log initial device list at startup.
+  static func initialDeviceList(
+    inputs: [DeviceInfo],
+    outputs: [DeviceInfo],
+    defaultInput: String?,
+    defaultOutput: String?
+  ) {
+    devices.notice("───────────────────────── INITIAL DEVICES ─────────────────────────")
+
+    // Log input devices
+    let inputSummary = inputs
+      .map { "\($0.name)[\($0.transport)]" }
+      .joined(separator: ", ")
+    devices.notice("🎤 INPUTS  | count=\(inputs.count) | \(inputSummary, privacy: .public)")
+
+    // Log output devices
+    let outputSummary = outputs
+      .map { "\($0.name)[\($0.transport)]" }
+      .joined(separator: ", ")
+    devices.notice("🔊 OUTPUTS | count=\(outputs.count) | \(outputSummary, privacy: .public)")
+
+    // Log defaults
+    let inputStr = defaultInput ?? "(none)"
+    let outputStr = defaultOutput ?? "(none)"
+    devices.notice("🎯 DEFAULTS | input=\"\(inputStr, privacy: .public)\" output=\"\(outputStr, privacy: .public)\"")
+    devices.notice("────────────────────────── INITIAL DEVICES END ────────────────────────")
   }
 
   // MARK: - Service Logging

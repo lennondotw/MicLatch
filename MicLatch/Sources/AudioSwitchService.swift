@@ -93,6 +93,19 @@ enum LastInputChange: Equatable {
   case nonLinked(from: String, to: String, timestamp: Date)
 }
 
+// MARK: - RecentInputChange
+
+/// Records a recent input change for lookback detection.
+struct RecentInputChange {
+  let timestamp: Date
+  let newInputID: AudioDeviceID
+  let newInput: String?
+  let oldInput: String?
+  let previousInputDevice: AudioDeviceID?
+  let transport: String
+  let isBluetooth: Bool
+}
+
 // MARK: - AudioSwitchService
 
 /// Service that monitors audio device changes and restores input device
@@ -114,11 +127,13 @@ final class AudioSwitchService: ObservableObject {
   // MARK: - Initialization
 
   init(
-    windowDuration: TimeInterval = 2.0,
+    windowDuration: TimeInterval = 0.5,
+    lookbackDuration: TimeInterval = 1.5,
     startImmediately: Bool = true,
     deviceProvider: any AudioDeviceProviding = RealAudioDeviceProvider()
   ) {
     self.windowDuration = windowDuration
+    self.lookbackDuration = lookbackDuration
     self.deviceProvider = deviceProvider
 
     if startImmediately {
@@ -155,6 +170,9 @@ final class AudioSwitchService: ObservableObject {
 
   /// Duration of the time window after output change (in seconds).
   let windowDuration: TimeInterval
+
+  /// Duration to look back for recent input changes when output changes (in seconds).
+  let lookbackDuration: TimeInterval
 
   /// The audio device provider (injectable for testing).
   let deviceProvider: any AudioDeviceProviding
@@ -194,7 +212,16 @@ final class AudioSwitchService: ObservableObject {
     isMonitoring = true
 
     Log.serviceStarted()
-    Log.defaultDevices(input: currentInputName, output: currentOutputName)
+
+    // Log initial device list
+    let inputDevices = previousDeviceInfos.values.filter(\.hasInput)
+    let outputDevices = previousDeviceInfos.values.filter(\.hasOutput)
+    Log.initialDeviceList(
+      inputs: Array(inputDevices),
+      outputs: Array(outputDevices),
+      defaultInput: currentInputName,
+      defaultOutput: currentOutputName
+    )
   }
 
   /// Stop monitoring audio device changes.
@@ -259,6 +286,12 @@ final class AudioSwitchService: ObservableObject {
   /// Timestamp when output change was detected.
   private var outputSwitchTime: Date?
 
+  /// Number of restores performed in the current window.
+  private var windowRestoreCount = 0
+
+  /// Maximum restores allowed per window before auto-closing.
+  private let maxRestoresPerWindow = 3
+
   /// Listener cleanup closures.
   private var listenerRemovers: [() -> Void] = []
 
@@ -267,6 +300,9 @@ final class AudioSwitchService: ObservableObject {
 
   /// Previous device info for removed device logging.
   private var previousDeviceInfos: [AudioDeviceID: Log.DeviceInfo] = [:]
+
+  /// Recent input change for lookback detection.
+  private var recentInputChange: RecentInputChange?
 
   // MARK: - Private Methods
 
@@ -339,18 +375,29 @@ final class AudioSwitchService: ObservableObject {
       return
     }
 
-    // Record current input before system might change it
-    if let currentInputID = deviceProvider.defaultInputID() {
-      previousInputDevice = currentInputID
-      Log.windowStateChanged(
-        isOpen: true,
-        reason: "Bluetooth output changed to \(newOutput ?? "unknown")"
-      )
+    // Check lookback: was there a recent input change that should be linked?
+    if let recent = recentInputChange,
+       recent.isBluetooth,
+       Date().timeIntervalSince(recent.timestamp) <= lookbackDuration
+    {
+      handleRetroactiveLinkedChange(recent)
+      recentInputChange = nil
+      return
     }
 
-    // Start time window
+    // NOTE: We do NOT query defaultInputID() here because the system's linked switch
+    // may have already completed by the time we receive the output change notification.
+    // Instead, we rely on the previousInputDevice that was set during start() or
+    // updated during non-linked input changes.
+    Log.windowStateChanged(
+      isOpen: true,
+      reason: "Bluetooth output changed to \(newOutput ?? "unknown")"
+    )
+
+    // Start/reset time window (consecutive BT output changes reset the window)
     outputSwitchPending = true
     outputSwitchTime = Date()
+    windowRestoreCount = 0
 
     pendingTimer?.invalidate()
     pendingTimer = Timer.scheduledTimer(
@@ -378,6 +425,9 @@ final class AudioSwitchService: ObservableObject {
       return
     }
 
+    // Save previous input device before it gets overwritten
+    let savedPreviousInputDevice = previousInputDevice
+
     currentInputName = newInput
 
     // Event recording and notification are handled in handleLinkedInputChange/recordNonLinkedChange
@@ -395,7 +445,8 @@ final class AudioSwitchService: ObservableObject {
         newInputID: newInputID,
         newInput: newInput,
         oldInput: oldInput,
-        transport: transport
+        transport: transport,
+        savedPreviousInputDevice: savedPreviousInputDevice
       )
     }
   }
@@ -409,6 +460,9 @@ final class AudioSwitchService: ObservableObject {
     let elapsed = Date().timeIntervalSince(outputSwitchTime ?? Date())
     let elapsedMs = Int(elapsed * 1000)
     let isBluetooth = deviceProvider.isBluetooth(newInputID)
+
+    // Clear recent input change since we're handling a linked change now
+    recentInputChange = nil
 
     // Only restore if input switched to a Bluetooth device (HFP concern)
     guard isBluetooth else {
@@ -443,10 +497,19 @@ final class AudioSwitchService: ObservableObject {
       Log.decisionRestore(to: previousName, elapsedMs: elapsedMs)
       currentInputName = previousName
       inputRestoreCount += 1
+      windowRestoreCount += 1
       lastInputChange = .restored(deviceName: previousName, timestamp: Date())
       addEvent(.inputRestored(deviceName: previousName))
       // Send notification for input restored (the primary feature)
       NotificationService.shared.notifyInputRestored(deviceName: previousName)
+
+      // Close window if max restores reached
+      if windowRestoreCount >= maxRestoresPerWindow {
+        Log.windowStateChanged(isOpen: false, reason: "max restores (\(maxRestoresPerWindow)) reached")
+        outputSwitchPending = false
+        pendingTimer?.invalidate()
+        pendingTimer = nil
+      }
     } else {
       Log.decisionSkip(reason: "failed to restore input to \(previousName)")
       lastInputChange = .restoreFailed(deviceName: previousName, timestamp: Date())
@@ -459,11 +522,31 @@ final class AudioSwitchService: ObservableObject {
     newInput: String?,
     oldInput: String?,
     transport: String,
-    skipLog: Bool = false
+    skipLog: Bool = false,
+    savedPreviousInputDevice: AudioDeviceID? = nil
   ) {
     if !skipLog {
       Log.inputChanged(from: oldInput, to: newInput, transport: transport, isLinked: false)
     }
+
+    let isBluetooth = deviceProvider.isBluetooth(newInputID)
+
+    // Save for lookback detection (only if Bluetooth, which might be linked)
+    if isBluetooth {
+      recentInputChange = RecentInputChange(
+        timestamp: Date(),
+        newInputID: newInputID,
+        newInput: newInput,
+        oldInput: oldInput,
+        previousInputDevice: savedPreviousInputDevice ?? previousInputDevice,
+        transport: transport,
+        isBluetooth: true
+      )
+    } else {
+      // Clear lookback if non-Bluetooth (can't be linked)
+      recentInputChange = nil
+    }
+
     previousInputDevice = newInputID
     nonLinkedInputSwitchCount += 1
     lastInputChange = .nonLinked(
@@ -476,6 +559,46 @@ final class AudioSwitchService: ObservableObject {
     if let newInput {
       addEvent(.inputChanged(from: oldInput, to: newInput, context: .unlinked))
       NotificationService.shared.notifyDefaultInputChanged(from: oldInput, to: newInput, context: .unlinked)
+    }
+  }
+
+  private func handleRetroactiveLinkedChange(_ recent: RecentInputChange) {
+    let elapsed = Date().timeIntervalSince(recent.timestamp)
+    let elapsedMs = Int(elapsed * 1000)
+
+    Log.decisionReclassified(from: recent.oldInput, to: recent.newInput ?? "unknown", elapsedMs: elapsedMs)
+
+    // Send reclassification notification
+    if let newInput = recent.newInput {
+      addEvent(.inputReclassifiedAsLinked(from: recent.oldInput, to: newInput))
+      NotificationService.shared.notifyInputReclassifiedAsLinked(from: recent.oldInput, to: newInput)
+    }
+
+    // Decrement non-linked count (was incorrectly counted)
+    if nonLinkedInputSwitchCount > 0 {
+      nonLinkedInputSwitchCount -= 1
+    }
+
+    // Only restore if input changed to something different than our saved device
+    guard let previousID = recent.previousInputDevice, recent.newInputID != previousID else {
+      Log.decisionNoChange(currentDevice: recent.newInput ?? "unknown")
+      return
+    }
+
+    let previousName = deviceProvider.name(of: previousID) ?? "unknown"
+    if deviceProvider.setDefaultInput(previousID) {
+      Log.decisionRestore(to: previousName, elapsedMs: -elapsedMs)
+      currentInputName = previousName
+      inputRestoreCount += 1
+      lastInputChange = .restored(deviceName: previousName, timestamp: Date())
+      addEvent(.inputRestored(deviceName: previousName))
+      NotificationService.shared.notifyInputRestored(deviceName: previousName)
+      // Update previousInputDevice to the restored device
+      previousInputDevice = previousID
+    } else {
+      Log.decisionSkip(reason: "failed to restore input to \(previousName)")
+      lastInputChange = .restoreFailed(deviceName: previousName, timestamp: Date())
+      addEvent(.restoreFailed(deviceName: previousName))
     }
   }
 
@@ -523,6 +646,14 @@ final class AudioSwitchService: ObservableObject {
 
     let addedDevices = addedIDs.compactMap { deviceInfoMap[$0] }
     let removedDevices = removedIDs.compactMap { previousDeviceInfos[$0] }
+
+    // Skip logging if no actual device changes
+    guard !addedDevices.isEmpty || !removedDevices.isEmpty else {
+      // Still update state for next comparison
+      previousDeviceIDs = currentIDSet
+      previousDeviceInfos = deviceInfoMap
+      return
+    }
 
     // Build separate input and output lists
     let inputDevices = deviceInfoMap.values.filter(\.hasInput)

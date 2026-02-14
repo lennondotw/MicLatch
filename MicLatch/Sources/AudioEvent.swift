@@ -35,6 +35,9 @@ struct AudioEvent: Identifiable, Equatable {
     /// Restore attempt failed.
     case restoreFailed(deviceName: String)
 
+    /// Input change was reclassified from unlinked to linked via lookback.
+    case inputReclassifiedAsLinked(from: String?, to: String)
+
     /// Input device connected.
     case inputDeviceConnected(deviceName: String)
 
@@ -80,6 +83,12 @@ struct AudioEvent: Identifiable, Equatable {
 
     case let .restoreFailed(deviceName):
       return "Restore Failed: \(deviceName)"
+
+    case let .inputReclassifiedAsLinked(from, to):
+      if let from {
+        return "Reclassified as Linked: \(to) (was \(from))"
+      }
+      return "Reclassified as Linked: \(to)"
 
     case let .inputDeviceConnected(deviceName):
       return "Input Connected: \(deviceName)"
